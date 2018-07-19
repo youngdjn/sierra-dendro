@@ -48,3 +48,6 @@ vignettes/*.pdf
 
 # Directories with files too large to sync
 /data/non-synced/
+
+# LibreOffice locks
+.~lock.*#
