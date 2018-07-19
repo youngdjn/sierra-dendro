@@ -181,7 +181,7 @@ trees.clim.rwi = trees.clim.rwi %>%
 clim.rwi.out = clim.rwi %>%
   filter(year > 1959) %>%
   mutate_at(vars(-tree.id,-year),funs(signif)) # truncate to 6 digits
-write.csv(clim.rwi.out,"data/compiled-for-analysis/chronology_climate.csv",row.names=FALSE)
+write.csv(clim.rwi.out,"data/compiled-for-analysis/years.csv",row.names=FALSE)
 
 #### output tree-level data
 trees.out.pre.pre = trees %>%  ## filter to only trees for which we have ring data
