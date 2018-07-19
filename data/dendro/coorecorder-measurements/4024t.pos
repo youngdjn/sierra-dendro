@@ -1,0 +1,66 @@
+#DENDRO (Cybis Dendro program compatible format) Coordinate file written as C:\Users\djyoung\Box Sync\Dendro Data\CooRecorder measurements\4024t.pos
+#Imagefile S:\FacultyData\LATIMER\LATIMERShared\DYoung Dendro\Individual core images\For measuring\4024t.jpg
+#DPI 1200.0
+#All coordinates in millimeters (mm)
+SCALE 1
+#C DATED 2013
+#C pith offset
+#C DistanceToPith=13.9; YearsToPith=2; CalcRadius=Yes; Radius=67.924; 
+#C PithCoordinates=0.000,0.000; 
+#C CooRecorder=7.8 July 8 2014; 
+#C LicencedTo=Derek Young, dyoungster@gmail.com; 
+67.712,5.461 
+D68.686,5.461 #W#
+70.570,5.461 
+D71.522,5.461 #W#
+73.935,5.482 
+D75.205,5.461 #W#
+78.105,5.482 
+D78.804,5.482 #W#
+81.555,5.503 
+D82.338,5.503 #W#
+84.582,5.503 
+D85.323,5.503 #W#
+87.566,5.524 
+D88.265,5.524 #W#
+90.170,5.524 
+D91.271,5.524 #W#
+93.451,5.546 
+D94.255,5.546 #W#
+98.002,5.546 
+D98.721,5.546 #W#
+100.796,5.567 
+D101.939,5.567 #W#
+105.071,5.567 
+D105.897,5.567 #W#
+108.860,5.588 
+D109.453,5.588 #W#
+111.760,5.588 
+D113.072,5.588 #W#
+116.671,5.609 
+D117.666,5.609 #W#
+121.856,5.630 
+D123.338,5.630 #W#
+127.868,5.630 
+D129.942,5.630 #W#
+133.477,5.651 #auto
+D135.721,6.054 #W#
+140.102,6.837  140.462,4.741 
+D141.986,5.016 #W#
+146.135,5.736 
+D147.130,5.906 #W#
+150.580,6.519  150.918,4.890 
+D152.210,5.143 #W#
+157.755,6.265 
+D158.538,6.435 #W#
+161.502,7.112  162.094,4.657 
+D163.047,4.995 #W#
+166.116,6.075  166.709,4.572 
+D168.190,5.292 #W#
+170.773,6.519  171.831,4.551 
+D173.164,5.398 #W#
+175.048,6.583  176.276,4.593 
+D177.525,5.546 #W#
+179.599,7.091  181.758,4.508 
+D182.753,5.588 #W#
+184.192,7.112 

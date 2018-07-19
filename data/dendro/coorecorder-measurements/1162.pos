@@ -1,0 +1,46 @@
+#DENDRO (Cybis Dendro program compatible format) Coordinate file written as S:\FacultyData\LATIMER\LATIMERShared\DYoung Dendro\CooRecorder measurements\1162.pos
+#Imagefile S:\FacultyData\LATIMER\LATIMERShared\DYoung Dendro\Individual core images\For measuring\1162.jpg
+#DPI 1200.0
+#All coordinates in millimeters (mm)
+SCALE 1
+#C DATED 2013
+#C pith offset
+#C no auto
+#C DistanceToPith=35.8; YearsToPith=4; Radius=148.442; CalcRadius=Yes; 
+#C PithCoordinates=204.364,-23.093; 
+#C CooRecorder=7.8 July 8 2014; 
+#C LicencedTo=Derek Young, djyoung@udcavis.edu; 
+58.610,5.059 
+60.579,4.128  61.764,6.625 
+64.643,5.969 
+68.516,5.059 
+71.480,4.276  72.200,6.308 
+74.358,5.778 
+76.264,5.376 
+78.422,4.784 
+80.666,4.064  81.322,6.096 
+83.820,5.440 
+85.005,5.122 
+86.572,4.530  87.418,6.562 
+88.794,6.096 
+90.699,5.503 
+93.387,4.593 
+96.605,3.281  97.854,6.498 
+102.193,5.122 
+105.600,3.746  106.659,6.371 
+109.940,5.059 
+113.813,3.344  115.126,6.752 
+118.195,5.778 
+121.560,3.937  122.872,6.435 
+124.968,5.249 
+126.873,3.874  128.651,6.900 
+131.932,4.932 
+134.620,3.535  136.313,6.625 
+138.620,5.059 
+141.245,3.281  143.679,6.689 
+147.024,4.128  148.865,6.562 
+151.617,4.000  154.242,6.900 
+157.840,2.625  162.518,6.900 
+168.148,3.810  169.862,6.816 
+174.054,3.408  177.673,6.964 
+180.530,3.641 

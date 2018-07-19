@@ -1,0 +1,45 @@
+#DENDRO (Cybis Dendro program compatible format) Coordinate file written as S:\FacultyData\LATIMER\LATIMERShared\DYoung Dendro\CooRecorder measurements\1027t.pos
+#Imagefile S:\FacultyData\LATIMER\LATIMERShared\DYoung Dendro\Individual core images\For measuring\1027t.jpg
+#DPI 1200.0
+#All coordinates in millimeters (mm)
+SCALE 1
+#C DATED 2013
+#C no auto
+#C no pith
+#C CooRecorder=7.8 July 8 2014; 
+#C LicencedTo=Derek Young, djyoung@udcavis.edu; 
+69.765,5.651 
+D70.146,5.567 #W#
+70.676,5.461 
+D70.929,5.419 #W#
+71.882,5.207 
+D72.115,5.143 #W#
+72.348,5.101 
+D72.602,5.038 #W#
+72.834,4.995 
+D73.046,4.953 #W#
+73.702,4.805 
+D73.872,4.762 #W#
+74.443,4.657 
+D74.549,4.635 #W#
+74.994,4.530 
+D75.417,4.424 #W#
+76.623,4.106 
+D77.152,3.958 #W#
+78.359,3.598  79.312,7.472 
+D79.714,7.366 #W#
+80.962,7.070 
+D81.746,6.921 #W#
+83.079,6.689 
+D83.778,6.498 #W#
+84.688,6.350 
+D85.175,6.244 #W#
+86.085,6.032 
+D86.466,5.948 #W#
+87.312,5.757 
+D88.011,5.609 #W#
+89.302,5.313 
+D90.996,4.911 #W#
+92.202,4.635 
+D93.154,4.424 #W#
+94.446,4.149 

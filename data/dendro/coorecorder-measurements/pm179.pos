@@ -1,0 +1,59 @@
+#DENDRO (Cybis Dendro program compatible format) Coordinate file written as S:\FacultyData\LATIMER\LATIMERShared\DYoung Dendro\CooRecorder measurements\pm179.pos
+#Imagefile S:\FacultyData\LATIMER\LATIMERShared\DYoung Dendro\Individual core images\For measuring\pm179.jpg
+#DPI 1200.0
+#All coordinates in millimeters (mm)
+SCALE 1
+#C DATED 2012
+#C all auto
+#C no pith
+#C CooRecorder=7.8 July 8 2014; 
+#C LicencedTo=Derek Young, djyoung@udcavis.edu; 
+48.599,6.604 
+50.271,6.604 
+51.922,6.604 
+53.298,6.604 
+54.525,6.604 
+55.880,6.604 
+57.256,6.604 
+58.843,6.604 
+60.473,6.625 
+61.553,6.625 
+62.823,6.625 
+64.198,6.625 
+65.405,6.625 
+67.014,6.625 
+68.940,6.625 
+70.845,6.625 
+72.665,6.625 
+74.337,6.625 
+76.454,6.625 
+78.422,6.625 
+80.751,6.625 
+82.931,6.625 
+84.857,6.625 
+87.651,6.646 
+90.318,6.646 
+92.477,6.646 
+94.488,6.646 
+97.134,6.646 
+99.758,6.646 
+102.955,6.646 
+106.214,6.646 
+107.802,6.646 
+109.220,6.646 
+111.993,6.668 
+115.528,6.668 
+118.554,6.668 
+121.285,6.668 
+123.740,6.668 
+126.492,6.668 
+129.794,6.668 
+133.477,6.668 
+137.435,6.689 
+141.626,6.689 
+146.516,6.689 
+152.527,6.689 
+161.290,6.710 
+166.349,6.710 
+170.942,6.710 
+175.281,6.710 
