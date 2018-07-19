@@ -99,8 +99,9 @@ read.pos <- function(sample,sample.secondary, unc.stop=TRUE,cr.del=TRUE,ab.stop=
   file.core <- filename[1]
   pos.core <- strsplit(file.core,"/",fixed=TRUE)[[1]][4]
   name.core <- strsplit(pos.core,".",fixed=TRUE)[[1]][1]
-  name.tree <- gsub("t","",name.core,fixed=TRUE)
-  name.tree <- gsub("T","",name.tree,fixed=TRUE)
+  name.core <- gsub("t","",name.core,fixed=TRUE)
+  name.core <- gsub("T","",name.core,fixed=TRUE)
+  name.core <- toupper(name.core)
   
   pos <- scan(filename[1],character(0),sep="\n",quiet=TRUE)
   
@@ -285,7 +286,7 @@ read.pos <- function(sample,sample.secondary, unc.stop=TRUE,cr.del=TRUE,ab.stop=
     }
   }
   
-  name.tree <- toupper(name.tree)
+  
   
   
   series <- data.frame(year=core$year,sample=core$width)
@@ -297,9 +298,8 @@ read.pos <- function(sample,sample.secondary, unc.stop=TRUE,cr.del=TRUE,ab.stop=
   names(nrings) <- sample
   names(age) <- sample
   names(radius) <- sample
-  names(name.tree) <- sample
   
-  return(list(series=series,truncated=truncated,nrings=nrings,age=age,radius=radius,core=name.tree))
+  return(list(series=series,truncated=truncated,nrings=nrings,age=age,radius=radius,core=name.core,tree.id=sample))
 }
 
 merge.all <- function(x,y) {
@@ -323,6 +323,7 @@ open.chron <- function(samples,samples.secondary,unc.stop=TRUE,cr.del=TRUE,ab.st
   age <- lapply(seriess.trunc,function(x) x[["age"]])
   radius <- lapply(seriess.trunc,function(x) x[["radius"]])
   core <- lapply(seriess.trunc,function(x) x[["core"]])
+  tree.id <- lapply(seriess.trunc,function(x) x[["tree.id"]])
   
   seriess <- seriess[!sapply(seriess,is.null)]
   chron <- Reduce(merge.all,seriess)
@@ -346,7 +347,10 @@ open.chron <- function(samples,samples.secondary,unc.stop=TRUE,cr.del=TRUE,ab.st
   core.all <- unlist(core)
   core.all <- core.all[!is.null(core.all)]
   
-  return(list(chron=chron,trunc=trunc.all,nrings=nrings.all,age=age.all,radius=radius.all,core=core.all))
+  tree.id.all <- unlist(tree.id)
+  tree.id.all <- tree.id.all[!is.null(tree.id.all)]
+  
+  return(list(chron=chron,trunc=trunc.all,nrings=nrings.all,age=age.all,radius=radius.all,core=core.all,tree.id=tree.id.all))
 }
 
 
@@ -357,13 +361,21 @@ clean.chron <- function(chron) {
   ages <- chron$age
   radii <- chron$radius
   cores <- chron$core
+  trees.id <- chron$tree.id
   
   sample.ids <- names(widths)
   
   #### for each sample, apply data from crossdating progress records
+  #### NOTE that this must already be sorted by modification date
   cd.records <- read.csv("data/dendro/crossdating-records/Crossdating progress records (Responses).csv")
+  cd.records$Core.number <- toupper(cd.records$Core.number)
   
-  ####!!!! sort by record date
+  ## aggregate it to determine for each core the most recent date of modifications that did not make sense
+  mod.justification <- cd.records %>%
+    dplyr::group_by(Core.number) %>%
+    dplyr::summarize(most.recent.unjustified.mod = max(`If.modification.did.not.make.sense.in.image...`,na.rm=TRUE)) %>%
+    filter(most.recent.unjustified.mod > 0)
+  
   
   
   #get most recent record for each core
@@ -422,7 +434,7 @@ clean.chron <- function(chron) {
       
       }
       
-      ####!!! otherwise, clip to good year
+
       
     }
     
@@ -459,15 +471,23 @@ clean.chron <- function(chron) {
     
     # look up and truncate at most recent unclear modification date if one exists. This is the most recent date at which, in order to get good alignment, the analyst had to mark a ring that did not make sense in the image
     
-    ##!!@@ need to do this using crossdating progress records too (?)
-    
+
+    ## first do this using the measurement checking spreadsheet (older)
     unc.records <- read.csv("data/dendro/crossdating-records/Measurement checking_cleaned.csv")
     unc.records$ID <- toupper(unc.records$ID)
     unc.year <- unc.records[which(unc.records$ID == core),]$Most.recent.year.of.unclear.modification
-    if(length(unc.year) > 1) unc.year <- max(unc.year) # if there is more then one answer due to some fluke, use the most recent year
+    
+    
+    ## now also do this using the crossdating progress records
+    unjustified.year <- mod.justification[mod.justification$Core.number == core,]$most.recent.unjustified.mod
+    
+    unc.year <- c(unc.year,unjustified.year)
+    
+    
+    if(length(unc.year) > 1) unc.year <- max(unc.year,na.rm=TRUE) # if there is more then one answer due to some fluke, use the most recent year
     if(length(unc.year) != 0) {
       if(!is.na(unc.year)) {
-        cat("Truncating at most recent year of modification unsupported by image (",unc.year,") for core:",sample,"\n")
+        cat("Truncating at most recent year of modification unsupported by image (",unc.year,") for core:",core,"\n")
         widths[(years<=unc.year),sample] <- NA
       }
     }
