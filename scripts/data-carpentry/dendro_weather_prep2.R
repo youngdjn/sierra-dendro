@@ -180,7 +180,8 @@ trees.clim.rwi = trees.clim.rwi %>%
 #### output year-level data
 clim.rwi.out = clim.rwi %>%
   filter(year > 1959) %>%
-  mutate_at(vars(-tree.id,-year),funs(signif)) # truncate to 6 digits
+  mutate_at(vars(-tree.id,-year),funs(signif)) %>% # truncate to 6 digits
+  select(-(rad.tot:rad.06))
 write.csv(clim.rwi.out,"data/compiled-for-analysis/years.csv",row.names=FALSE)
 
 #### output tree-level data
