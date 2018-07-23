@@ -1,3 +1,6 @@
+# Non-synced data directory
+/data/non-synced/
+
 # History files
 .Rhistory
 .Rapp.history
