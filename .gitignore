@@ -54,3 +54,4 @@ vignettes/*.pdf
 
 # LibreOffice locks
 .~lock.*#
+.Rproj.user
