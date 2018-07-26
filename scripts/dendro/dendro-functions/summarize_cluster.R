@@ -3,15 +3,17 @@ source("scripts/dendro/dendro-functions/read_pos_extended_bai.R")
 
 list.plots <- function() {
   
-  trees <- read.csv("Ancillary data/trees_loc_elev.csv",header=TRUE,stringsAsFactors=FALSE)
-  cat(unique(trees$plot.id))
+  trees <- read.csv("data/plot-and-tree/processed/trees_loc.csv",header=TRUE,stringsAsFactors=FALSE)
+  #cat(unique(trees$plot.id))
   return(unique(trees$plot.id))
   
 }
 
 
 
-summarize.cluster <- function(cluster,type="cluster") {
+summarize.cluster <- function(cluster,type="cluster",name=cluster) {
+
+  name = paste(name,collapse="") # in case a vector of core names was provided for the cluster and there was no additional name provided
   
   trees <- read.csv("data/plot-and-tree/processed/trees_loc.csv",header=TRUE,stringsAsFactors=FALSE)
   trees$tree.id <- toupper(trees$tree.id)
@@ -33,7 +35,7 @@ summarize.cluster <- function(cluster,type="cluster") {
   trees[(trees$y >= lat.cutoff) & (trees$elev >= n.mid.elev),]$cluster <- "NH"
   
   
-  if(cluster=="ALL") {
+  if(type != "tree" && cluster=="ALL") {
     # open all trees
     trees.cluster <- trees
   # } else if (cluster == "OTHER") {
@@ -49,8 +51,10 @@ summarize.cluster <- function(cluster,type="cluster") {
   #   trees.cluster <- data.frame(tree.id = as.character(unmatched.pos.ids),former.id="",species=NA,ref.chron=NA)
   #   trees.cluster$tree.id <- as.character(trees.cluster$tree.id)
   } else {
-    # open a chronology of all trees in the selected cluster
-    trees.cluster <- trees[(trees$cluster %in% cluster) | (trees$plot.id %in% cluster),]
+    # open a chronology of all trees in the selected cluster or plot
+    
+    # in case the script is being run to crossdate specific trees or cores or clusters, check to see what trees and cores match
+    trees.cluster <- trees[(trees$cluster %in% cluster) | (trees$plot.id %in% cluster) | (trees$tree.id %in% cluster),]
   }
   
   
@@ -61,7 +65,7 @@ summarize.cluster <- function(cluster,type="cluster") {
   
   patterns =cbind(tree.id.patterns,former.id.patterns)
   
-  patterns[patterns == "NAA?B?Z?t?$"] <- NA
+  patterns[(patterns == "NAA?B?Z?t?$") | (patterns == "A?B?Z?t?$")] <- NA
   
   patterns = toupper(patterns)
   patterns = as.vector(patterns)
@@ -75,11 +79,11 @@ summarize.cluster <- function(cluster,type="cluster") {
   ## find which core names (from the pos files) match trees
   cores.match.trees = grepl(pattern,core.names)
   cores.cluster <- core.names[cores.match.trees]
+  #cores.cluster <- core.names
     
   open.chron.results <- open.chron(cores.cluster,cores.cluster,unc.stop=TRUE,core.name=TRUE)
   
-  ##!! do we need to clean this chron--i.e., remove uncertain rings according to google sheet??
-  
+  ##!! NOTE that this script does not clean the ring-width series based on the crossdating progress records (e.g., areas of poor correlation to a reference chronology)
   
   chron <- open.chron.results[["chron"]]
   trunc <- open.chron.results[["trunc"]]
@@ -115,16 +119,16 @@ summarize.cluster <- function(cluster,type="cluster") {
   chron.dated <- chron.detrended[,dated.list]
   chron.dated <- chron.dated[as.numeric(rownames(chron.dated)) < 2015,] # remove the 3000's chrons (which means they don't have a date)
   
-  corr <- corr.rwl.seg(chron.dated,seg.length=20,bin.floor=14,prewhiten=TRUE,pcrit=0.1,label.cex=.7,main=paste("All dated cores in cluster",cluster))
+  corr <- corr.rwl.seg(chron.dated,seg.length=20,bin.floor=14,prewhiten=TRUE,pcrit=0.1,label.cex=.7,main=paste("All dated cores in cluster",name))
   
   # use only cores that had overall rho > 0.4
   corr.overall <- as.data.frame(corr$overall)
   ref.cores <- rownames(corr.overall[corr.overall$rho > 0.4,])
   
-  if(length(ref.cores) < 4) stop("Too few cores in reference chronology. That is, too few cores that correlate well with the mean across all cores")
+  if(length(ref.cores) < 4) stop("Too few cores in reference chronology. That is, too few cores that correlate well with the mean across all cores in the cluster.")
   
   chron.dated.ref <- chron.dated[,ref.cores]
-  corr.ref <- corr.rwl.seg(chron.dated.ref,seg.length=20,bin.floor=14,pcrit=0.10,prewhiten=TRUE,label.cex=.7,main=paste("Cores in reference chronology for",cluster))
+  corr.ref <- corr.rwl.seg(chron.dated.ref,seg.length=20,bin.floor=14,pcrit=0.10,prewhiten=TRUE,label.cex=.7,main=paste("Cores in reference chronology for",name))
   
   # add a col to the dated cores list for whether it is included in master chron (i.e., rho > 0.5)
   dated.cores.list.2$ref.chron <- ifelse(dated.cores.list.2$sample %in% ref.cores,TRUE,FALSE)
@@ -178,7 +182,7 @@ summarize.cluster <- function(cluster,type="cluster") {
 
 
   # write cluster summary
-  a <- suppressWarnings(try(write.csv(cluster.summary,paste("data/dendro/crossdating-summaries/",cluster,".csv",sep="",na=" "),row.names=FALSE),silent=TRUE))
+  a <- suppressWarnings(try(write.csv(cluster.summary,paste("data/dendro/crossdating-summaries/",name,".csv",sep="",na=" "),row.names=FALSE),silent=TRUE))
   if(class(a) == "try-error") {
     stop("You must close the cluster_summary spreadsheet before running this function.\n")
   }
@@ -186,8 +190,8 @@ summarize.cluster <- function(cluster,type="cluster") {
   ### make mean value reference chronology
   chron.dated.ref.mean <- chron(chron.dated.ref,prefix=substr(cluster,1,3),biweight=TRUE,prewhiten=FALSE)
 
-  if(type == "plot") {
-    chron.dated.ref.mean <- chron.dated.ref.mean[chron.dated.ref.mean$samp.depth > 4,] #must have at least 4 cores to compare against
+  if(type == "plot" | type == "tree") {
+    chron.dated.ref.mean <- chron.dated.ref.mean[chron.dated.ref.mean$samp.depth > 3,] #must have at least 4 cores to compare against
   } else   {
     chron.dated.ref.mean <- chron.dated.ref.mean[chron.dated.ref.mean$samp.depth > 8,] #must have at least 8 cores to compare against
   }
@@ -198,7 +202,7 @@ summarize.cluster <- function(cluster,type="cluster") {
   if(nrow(chron.dated.ref.mean) == 0) stop("Too few cores in reference chronology.")
 
   # export mean value ref chron to CDendro
-  filename <- paste("data/dendro/reference-chronologies/ref_chron_",cluster,".rwl",sep="")
+  filename <- paste("data/dendro/reference-chronologies/ref_chron_",name,".rwl",sep="")
 
   write.df <- data.frame(chron=chron.dated.ref.mean[,1])
   rownames(write.df) <- rownames(chron.dated.ref.mean)
@@ -209,7 +213,7 @@ summarize.cluster <- function(cluster,type="cluster") {
   oldest.ref.chron <- min(as.numeric(rownames(chron.dated.ref.mean)))
   nyears.ref.chron <- nrow(chron.dated.ref.mean)
   cat("--------------------------------------------\n")
-  cat("Reference chronology for ",cluster," goes to ",oldest.ref.chron," (",nyears.ref.chron," years)\n",sep="")
+  cat("Reference chronology for ",name," goes to ",oldest.ref.chron," (",nyears.ref.chron," years)\n",sep="")
   cat("--------------------------------------------\n")
   
   
