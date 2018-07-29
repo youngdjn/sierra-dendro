@@ -72,7 +72,8 @@ summarize.cluster <- function(cluster,type="cluster",name=cluster) {
   patterns = patterns[!is.na(patterns)]
   pattern = paste(patterns,collapse="|")
   
-  files = list.files(path="S:/FacultyData/LATIMER/LATIMERShared/DYoung Dendro/CooRecorder measurements",pattern=".pos$",full.names=FALSE,ignore.case=TRUE)
+  files = list.files(path=tree.ring.folder,pattern=".pos$",full.names=FALSE,ignore.case=TRUE)
+  
   ## take the extension and "t" off of all of them
   core.names <- toupper(sapply(files,function(x) strsplit(x,"[tT]*.pos$")[[1]][1]))
   

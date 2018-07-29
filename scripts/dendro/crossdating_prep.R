@@ -1,4 +1,9 @@
 setwd("~/Research projects/Sierra dendro/sierra-dendro") # Derek on Latim-GIS-S
+setwd("~/UC Davis/Research Projects/Sierra dendro/sierra-dendro") # Derek on Derek's computer
+
+tree.ring.folder = "data/dendro/coorecorder-measurements" # on repository
+tree.ring.folder = "S:/FacultyData/LATIMER/LATIMERShared/DYoung Dendro/CooRecorder measurements" # on networked computer
+
 source("scripts/dendro/dendro-functions/summarize_cluster.R")
 
 #####################################################################################
