@@ -26,7 +26,7 @@ if(ndup > 0) {warning("Some tree ids duplicated in trees_loc spreadsheet.")}
 
 
 #### open ring width data
-source("scripts/data-carpentry/dendro-functions/read_pos_extended_bai.R")
+source("scripts/dendro/dendro-functions/read_pos_extended_bai.R")
 
 chron <- open.chron(samples=trees$tree.id,samples.secondary=trees$former.id,unc.stop=TRUE,cr.del=TRUE,ab.stop=TRUE)
 
@@ -34,7 +34,7 @@ length(unique(trees$tree.id)) # were all the requested series provided?
 ncol(chron$chron) # no; why not? because the chronology drops colums for the cores it could not find
 
 # clean it based on externally-recorded records of correlation
-chron.clean <- clean.chron(chron) #fix error in colSums  #this function does:
+chron.clean <- clean.chron(chron,trunc.unjustified.by.image = FALSE) #fix error in colSums  #this function does:
 
 # remove A, B, Z, or T from core names to get tree.ids (this should not be necessary because the names should already be the tree IDs, not the core ids)
 names(chron.clean$chron) <- gsub("a?A?b?B?t?T?z?Z?","",names(chron.clean$chron))

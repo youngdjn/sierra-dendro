@@ -358,7 +358,7 @@ open.chron <- function(samples,samples.secondary,unc.stop=TRUE,cr.del=TRUE,ab.st
 }
 
 
-clean.chron <- function(chron) {
+clean.chron <- function(chron,trunc.unjustified.by.image = TRUE) {
  
   widths <- chron$chron
   truncs <- chron$trunc
@@ -473,31 +473,34 @@ clean.chron <- function(chron) {
     }
 
     
-    # look up and truncate at most recent unclear modification date if one exists. This is the most recent date at which, in order to get good alignment, the analyst had to mark a ring that did not make sense in the image
-    
 
-    ## first do this using the measurement checking spreadsheet (older)
-    unc.records <- read.csv("data/dendro/crossdating-records/Measurement checking_cleaned.csv")
-    unc.records$ID <- toupper(unc.records$ID)
-    unc.year <- unc.records[which(unc.records$ID == core),]$Most.recent.year.of.unclear.modification
+    if(trunc.unjustified.by.image == TRUE) {
     
-    
-    ## now also do this using the crossdating progress records
-    unjustified.year <- mod.justification[mod.justification$Core.number == core,]$most.recent.unjustified.mod
-    
-    unc.year <- c(unc.year,unjustified.year)
-    
-    
-    if(length(unc.year) > 1) unc.year <- max(unc.year,na.rm=TRUE) # if there is more then one answer due to some fluke, use the most recent year
-    if(length(unc.year) != 0) {
-      if(!is.na(unc.year)) {
-        cat("Truncating at most recent year of modification unsupported by image (",unc.year,") for core:",core,"\n")
-        widths[(years<=unc.year),sample] <- NA
+      # look up and truncate at most recent unclear modification date if one exists. This is the most recent date at which, in order to get good alignment, the analyst had to mark a ring that did not make sense in the image
+      
+      ## first do this using the measurement checking spreadsheet (older)
+      unc.records <- read.csv("data/dendro/crossdating-records/Measurement checking_cleaned.csv")
+      unc.records$ID <- toupper(unc.records$ID)
+      unc.year <- unc.records[which(unc.records$ID == core),]$Most.recent.year.of.unclear.modification
+      
+      
+      ## now also do this using the crossdating progress records
+      unjustified.year <- mod.justification[mod.justification$Core.number == core,]$most.recent.unjustified.mod
+      
+      unc.year <- c(unc.year,unjustified.year)
+      
+      
+      if(length(unc.year) > 1) unc.year <- max(unc.year,na.rm=TRUE) # if there is more then one answer due to some fluke, use the most recent year
+      if(length(unc.year) != 0) {
+        if(!is.na(unc.year)) {
+          
+          cat("Truncating at most recent year of modification unsupported by image (",unc.year,") for core:",core,"\n")
+          widths[(years<=unc.year),sample] <- NA
+        }
       }
+      
+      #make a flag for truncated? probably not necessary
     }
-    
-    #make a flag for truncated? probably not necessary
-    
     
   }
   
