@@ -11,7 +11,7 @@ list.plots <- function() {
 
 
 
-summarize.cluster <- function(cluster,type="cluster",name=cluster) {
+summarize.cluster <- function(cluster,type="cluster",name=cluster,clean.ref.chron=FALSE) {
 
   name = paste(name,collapse="") # in case a vector of core names was provided for the cluster and there was no additional name provided
   
@@ -86,10 +86,19 @@ summarize.cluster <- function(cluster,type="cluster",name=cluster) {
   
   ##!! NOTE that this script does not clean the ring-width series based on the crossdating progress records (e.g., areas of poor correlation to a reference chronology)
   
-  chron <- open.chron.results[["chron"]]
-  trunc <- open.chron.results[["trunc"]]
-  nrings <- open.chron.results[["nrings"]]
+  if(clean.ref.chron == TRUE) {
+    open.chron.results = clean.chron(open.chron.results)
+    chron <- open.chron.results[["chron"]]
+    trunc <- open.chron.results[["trunc"]]
+    nrings <- open.chron.results[["nyears"]]
+  } else {
+    chron <- open.chron.results[["chron"]]
+    trunc <- open.chron.results[["trunc"]]
+    nrings <- open.chron.results[["nrings"]]
+  }
+  
   chron.detrended <- spline.na.rm(chron)
+  
   
   #### make a list stating whether dated
   # for each core, get the years in which there are rings

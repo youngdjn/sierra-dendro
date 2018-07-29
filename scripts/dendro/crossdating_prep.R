@@ -1,5 +1,5 @@
-setwd("~/Research projects/Sierra dendro/sierra-dendro") # Derek on Latim-GIS-S
 setwd("~/UC Davis/Research Projects/Sierra dendro/sierra-dendro") # Derek on Derek's computer
+setwd("~/Research projects/Sierra dendro/sierra-dendro") # Derek on Latim-GIS-S
 
 tree.ring.folder = "data/dendro/coorecorder-measurements" # on repository
 tree.ring.folder = "S:/FacultyData/LATIMER/LATIMERShared/DYoung Dendro/CooRecorder measurements" # on networked computer
@@ -22,7 +22,7 @@ source("scripts/dendro/dendro-functions/summarize_cluster.R")
 
 ## Example of running for a specific plot:
 list.plots()
-summarize.cluster(cluster = "RS58",type = "plot", name=cluster)
+summarize.cluster(cluster = "RS58",type = "plot", name="RS58")
 
 ## Example of running for a specific group of trees:
 focal.trees = c("1402","4020","1403","4021","4038","1471","1406","4002","1435","4042","1448","1474","1094","2119","2125","2123","2137","4047","1453","1465")
@@ -30,7 +30,7 @@ focal.trees = "1213"
 summarize.cluster(cluster = focal.trees, type = "tree", name = "TreeGroup1") # The "name" will be used for the filename of the output reference chronology
 
 ## Example of running for a cluster:
-summarize.cluster(cluster = "SL",type = "cluster")
+summarize.cluster(cluster = "NL",type = "cluster",clean.ref.chron=TRUE)
 
 ## Example of running for ALL CORES that we have plot data and tree ring data for
 summarize.cluster(cluster = "ALL",type = "cluster") 

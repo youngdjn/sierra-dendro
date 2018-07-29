@@ -359,7 +359,7 @@ open.chron <- function(samples,samples.secondary,unc.stop=TRUE,cr.del=TRUE,ab.st
 
 
 clean.chron <- function(chron,trunc.unjustified.by.image = TRUE) {
- 
+  
   widths <- chron$chron
   truncs <- chron$trunc
   ages <- chron$age
