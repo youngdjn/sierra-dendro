@@ -30,7 +30,7 @@ focal.trees = "1213"
 summarize.cluster(cluster = focal.trees, type = "tree", name = "TreeGroup1") # The "name" will be used for the filename of the output reference chronology
 
 ## Example of running for a cluster:
-summarize.cluster(cluster = "NL",type = "cluster",clean.ref.chron=TRUE)
+summarize.cluster(cluster = "SL",type = "cluster",clean.ref.chron=FALSE)
 
 ## Example of running for ALL CORES that we have plot data and tree ring data for
 summarize.cluster(cluster = "ALL",type = "cluster") 
