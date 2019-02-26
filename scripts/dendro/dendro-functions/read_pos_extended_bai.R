@@ -9,7 +9,7 @@ dated.problems <- data.frame(sample=NA,problem=NA)
 
 
 
-
+# function to take a line in a .pos file and return the x and y coordinates
 split.line <- function(line) {
   
   split <- strsplit(line,"  | #|,")[[1]]
@@ -40,7 +40,7 @@ split.line <- function(line) {
 }
 
 
-
+# funciton to take a core number ("sample") and read the .pos file and output the ring-width series and some related metrics like tree age.
 read.pos <- function(sample,sample.secondary, unc.stop=TRUE,cr.del=TRUE,ab.stop=TRUE,core.name=FALSE) {
 
   
@@ -166,7 +166,16 @@ read.pos <- function(sample,sample.secondary, unc.stop=TRUE,cr.del=TRUE,ab.stop=
   annual.rings <- grep("^[0-9]",pos)
   coords <- pos[annual.rings]
   
+  #see if there is a comment saying the core is rotated
+  rotated.text <- grep("#C CORE ROTATED",pos,value=TRUE,ignore.case=TRUE)
+  if(length(rotated.text) > 0){
+    cat("Core rotated:",name.core,", dropping radius and age\n",sep=" ")
+    rotated=TRUE
+  } else {
+    rotated=FALSE
+  }
   
+
   #extract youngest ring date
   dated.text <- grep("#C DATED [0-9]{4}",pos,value=TRUE)
   dated.year <- as.numeric(substr(dated.text,10,13))
@@ -303,6 +312,11 @@ read.pos <- function(sample,sample.secondary, unc.stop=TRUE,cr.del=TRUE,ab.stop=
   names(age) <- sample
   names(radius) <- sample
   
+  if(rotated==TRUE) {
+    age = NA
+    radius = NA
+  }
+  
   return(list(series=series,truncated=truncated,nrings=nrings,age=age,radius=radius,core=name.core,tree.id=sample))
 }
 
@@ -310,6 +324,7 @@ merge.all <- function(x,y) {
   merge(x,y,all=TRUE,by="year")
 }
 
+# funciton to open multiple .pos files and compile them into a chronology
 open.chron <- function(samples,samples.secondary,unc.stop=TRUE,cr.del=TRUE,ab.stop=TRUE, core.name=FALSE) {
   
   seriess.trunc <- list(rep(NA,length(samples)))
@@ -593,7 +608,7 @@ spline.na.rm <- function(chron) {
 }
 
 
-
+# function to take a series of ring withds and a tree radius and calculate basal area and basal area increment for each year
 ba.bai.calc <- function(widths,radius) {
   
   bas <- widths
