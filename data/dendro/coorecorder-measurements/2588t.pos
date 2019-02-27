@@ -1,31 +1,16 @@
-#DENDRO (Cybis Dendro program compatible format) Coordinate file written as S:\FacultyData\LATIMER\LATIMERShared\DYoung Dendro\CooRecorder measurements\2588t.pos
+#DENDRO (Cybis Dendro program compatible format) Coordinate file written as C:\Users\djyoung\Documents\Git repositories\sierra-dendro\data\dendro\coorecorder-measurements\2588t.pos
 #Imagefile S:\FacultyData\LATIMER\LATIMERShared\DYoung Dendro\Individual core images\For measuring\2588t.jpg
 #DPI 1200.0
 #All coordinates in millimeters (mm)
 SCALE 1
-#C DATED 2013
+#C DATED 2006
 #C pith offset
-#C DistanceToPith=2.8; YearsToPith=1; Radius=76.877; CalcRadius=Yes; 
-#C PithCoordinates=3.302,0.021; 
+#C DistanceToPith=2.8; YearsToPith=1; Radius=49.297; CalcRadius=Yes; 
+#C PithCoordinates=41.106,-6.498; 
 #C CooRecorder=7.8 July 8 2014; 
-#C LicencedTo=Derek Young, djyoung@udcavis.edu; 
-79.989,5.313 
-D80.200,5.292 #W#
-80.518,5.249 
-D81.005,5.143 #W#
-82.381,4.890  82.486,5.461 
-D83.058,5.440 #W#
-84.455,5.398 
-D84.878,5.398 #W#
-85.661,5.398 
-D85.937,5.355 #W#
-86.741,5.186 
-D86.889,5.165 #W#
-87.334,5.080 
-D87.482,5.059 #W#
-88.709,4.784  88.964,5.588 
-D89.789,5.546 #W#
-91.673,5.419 
+#C LicencedTo=Derek Young, dyoungster@gmail.com; 
+88.921,5.461 
+91.715,5.440 
 D92.265,5.419 #W#
 93.705,5.419 
 D93.959,5.419 #W#
