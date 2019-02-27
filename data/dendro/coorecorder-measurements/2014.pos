@@ -3,12 +3,12 @@
 #DPI 1200.0
 #All coordinates in millimeters (mm)
 SCALE 1
-#C DATED 2009
+#C DATED 2005
 #C pith offset
-#C DistanceToPith=21.3; YearsToPith=4; CalcRadius=Yes; Radius=91.017; 
-#C PithCoordinates=166.180,0.698; 
+#C DistanceToPith=21.3; YearsToPith=4; CalcRadius=Yes; Radius=98.044; 
+#C PithCoordinates=173.397,7.366; 
 #C CooRecorder=7.8 July 8 2014; 
-#C LicencedTo=Derek Young, djyoung@udcavis.edu; 
+#C LicencedTo=Derek Young, dyoungster@gmail.com; 
 75.353,6.604 
 D75.628,6.604 #W#
 76.708,6.583 

@@ -6,10 +6,10 @@ SCALE 1
 #C DATED 2013
 #C no auto
 #C pith offset
-#C DistanceToPith=6.4; YearsToPith=1; CalcRadius=Yes; Radius=9.292; 
-#C PithCoordinates=66.569,-2.794; 
+#C DistanceToPith=6.7; YearsToPith=1; CalcRadius=Yes; Radius=130.154; 
+#C PithCoordinates=189.802,-1.334; 
 #C CooRecorder=7.8 July 8 2014; 
-#C LicencedTo=Derek Young, djyoung@udcavis.edu; 
+#C LicencedTo=Derek Young, dyoungster@gmail.com; 
 59.732,3.492 
 D60.050,3.535 #W#
 60.727,3.641 
