@@ -2,7 +2,7 @@ setwd("~/UC Davis/Research Projects/Sierra dendro/sierra-dendro") # Derek on Der
 setwd("~/Research projects/Sierra dendro/sierra-dendro") # Derek on Latim-GIS-S
 
 tree.ring.folder = "data/dendro/coorecorder-measurements" # on repository
-tree.ring.folder = "S:/FacultyData/LATIMER/LATIMERShared/DYoung Dendro/CooRecorder measurements" # on networked computer
+#tree.ring.folder = "S:/FacultyData/LATIMER/LATIMERShared/DYoung Dendro/CooRecorder measurements" # on networked computer
 
 # load the summarize.cluster() function and several other convenience functions
 source("scripts/dendro/dendro-functions/summarize_cluster.R")
@@ -32,7 +32,7 @@ focal.trees = "1213"
 summarize.cluster(cluster = focal.trees, type = "tree", name = "TreeGroup1") # The "name" will be used for the filename of the output reference chronology
 
 ## Example of running for a cluster:
-summarize.cluster(cluster = "SL",type = "cluster",clean.ref.chron=FALSE) # clean.ref.chron (which is true by default) truncates the core when corssdating records indicate: a ring removal or addition did not make sense in the image; crossdating was limited by reference chronology length 
+summarize.cluster(cluster = "SH",type = "cluster",clean.ref.chron=FALSE) # clean.ref.chron (which is true by default) truncates the core when corssdating records indicate: a ring removal or addition did not make sense in the image; crossdating was limited by reference chronology length 
 
 ## Example of running for ALL CORES that we have plot data and tree ring data for
 summarize.cluster(cluster = "ALL",type = "cluster") 
