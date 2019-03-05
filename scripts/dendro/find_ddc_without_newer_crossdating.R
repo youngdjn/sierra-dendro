@@ -94,5 +94,17 @@ remaining_ddc = remaining_ddc %>%
   filter(!(Core.number %in% crossdating_recent$Core.number))
 
 
+## pull in cluster
+cluster_data = read.csv("data/plot-and-tree/processed/trees_loc_simple.csv")
 
-write.csv(remaining_ddc,"data/dendro/crossdating-records/remaining_derek_double_check_cores.csv")
+## remove the ABZ etc from the end of the tree name
+remaining_ddc = remaining_ddc %>%
+  mutate(tree_id = str_replace(Core.number,"A","")) %>%
+  mutate(tree_id = str_replace(Core.number,"B2","")) %>%
+  mutate(tree_id = str_replace(Core.number,"Z",""))
+  
+
+remaining_ddc_full = left_join(remaining_ddc,cluster_data,by=c("Core.number"="tree.id"))
+
+
+write.csv(remaining_ddc_full,"data/dendro/crossdating-records/remaining_derek_double_check_cores.csv")
