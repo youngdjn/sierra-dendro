@@ -1,14 +1,14 @@
-#DENDRO (Cybis Dendro program compatible format) Coordinate file written as S:\FacultyData\LATIMER\LATIMERShared\DYoung Dendro\CooRecorder measurements\1084.pos
+#DENDRO (Cybis Dendro program compatible format) Coordinate file written as C:\Users\djyoung\Documents\Git repositories\sierra-dendro\data\dendro\coorecorder-measurements\1084.pos
 #Imagefile S:\FacultyData\LATIMER\LATIMERShared\DYoung Dendro\Individual core images\For measuring\1084.jpg
 #DPI 1200.0
 #All coordinates in millimeters (mm)
 SCALE 1
-#C DATED 2013
+#C DATED 2012
 #C pith offset
-#C DistanceToPith=11.2; YearsToPith=3; CalcRadius=Yes; Radius=86.720; 
-#C PithCoordinates=4.635,0.063; 
+#C DistanceToPith=11.2; YearsToPith=3; CalcRadius=Yes; Radius=94.467; 
+#C PithCoordinates=0.000,29.358; 
 #C CooRecorder=7.8 July 8 2014; 
-#C LicencedTo=Derek Young, djyoung@udcavis.edu; 
+#C LicencedTo=Derek Young, dyoungster@gmail.com; 
 91.228,4.826 
 D92.223,4.826 #W#
 94.213,4.826 
@@ -17,7 +17,6 @@ D95.208,4.826 #W#
 D98.404,4.847 #W#
 100.499,4.868 
 D101.536,4.868 #W#
-102.658,4.911 
 104.458,4.890 
 D105.685,4.890 #W#
 108.691,4.911 
