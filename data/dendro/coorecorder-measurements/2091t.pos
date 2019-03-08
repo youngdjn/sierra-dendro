@@ -1,13 +1,13 @@
-#DENDRO (Cybis Dendro program compatible format) Coordinate file written as S:\FacultyData\LATIMER\LATIMERShared\DYoung Dendro\CooRecorder measurements\2091t.pos
-#Imagefile S:\FacultyData\LATIMER\LATIMERShared\DYoung Dendro\Individual core images\For measuring\2091t.jpg
+#DENDRO (Cybis Dendro program compatible format) Coordinate file written as C:\Users\DYoung\Documents\UC Davis\Research Projects\Sierra dendro\sierra-dendro\data\dendro\coorecorder-measurements\2091t.pos
+#Imagefile C:\Users\DYoung\Box\Sierra dendro\Individual core images for measuring\For measuring\2091t.jpg
 #DPI 1200.0
 #All coordinates in millimeters (mm)
 SCALE 1
 #C DATED 2013
-#C DistanceToPith=2.3; YearsToPith=1; Radius=41.084; CalcRadius=Yes; 
-#C PithCoordinates=91.758,-1.270; 
-#C CooRecorder=7.8 July 8 2014; 
-#C LicencedTo=Derek Young, djyoung@udcavis.edu; 
+#C DistanceToPith=2.3; YearsToPith=1; Radius=51.075; CalcRadius=Yes; 
+#C PithCoordinates=0.572,0.106; 
+#C CooRecorder=7.8.1 Dec 20 2014; 
+#C LicencedTo=Derek Young, dyoungster@gmail.com; 
 51.308,5.927 
 D51.774,5.884 #W#
 53.679,5.884 
@@ -145,6 +145,6 @@ D307.530,5.546 #W#
 D312.060,4.551 #W#
 315.849,5.249  316.145,4.064 
 D316.611,4.276 #W#
-320.379,5.778  321.077,3.937 #unc
+320.379,5.778  321.077,3.937 
 D321.289,4.128 #W#
 324.443,6.816 
