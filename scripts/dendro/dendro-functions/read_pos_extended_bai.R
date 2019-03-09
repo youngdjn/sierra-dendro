@@ -325,7 +325,7 @@ merge.all <- function(x,y) {
 }
 
 # funciton to open multiple .pos files and compile them into a chronology
-open.chron <- function(samples,samples.secondary,unc.stop=TRUE,cr.del=TRUE,ab.stop=TRUE, core.name=FALSE) {
+open.chron <- function(samples,samples.secondary=NA,unc.stop=TRUE,cr.del=TRUE,ab.stop=TRUE, core.name=FALSE) {
   
   seriess.trunc <- list(rep(NA,length(samples)))
   
