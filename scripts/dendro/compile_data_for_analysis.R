@@ -65,15 +65,15 @@ truncs = NULL
 radii = NULL
 ages = NULL
 
-focal_clusters = c("SL","SH","NL","NH")
+focal_clusters = c("SL") # c("NL","NH", "SL","SH") #,"NL","NH")
 
 for(focal_cluster in focal_clusters) {
     
   chron_out = open_cluster_chron_truncate_window(focal_cluster=focal_cluster,
                                                  trunc_unjustified=TRUE,
-                                                 window_width=10,
-                                                 cor_threshold = 0.3,
-                                                 max_bad_years = 10,
+                                                 window_width=12,
+                                                 cor_threshold = 0.1,
+                                                 max_bad_years = 15,
                                                  min_good_years = 10)
   
   if(is.null(chron_rwi)) {
@@ -208,7 +208,7 @@ trees.clim.rwi = trees.clim.rwi %>%
 
 #### output year-level data
 clim.rwi.out = clim.rwi %>%
-  filter(year > 1959) %>%
+  filter(year > 1800) %>%
   mutate_at(vars(-tree.id,-year),funs(signif)) %>% # truncate to 6 digits
   select(-(rad.tot:rad.06))
 write.csv(clim.rwi.out,"data/compiled-for-analysis/years.csv",row.names=FALSE)
@@ -281,11 +281,49 @@ plot(radius~dbh,data=trees.out[trees.out$dbh < 100,])
 
 ## For each core, get its start year, end year, nyears, trunc reason, plot, and species
 
+# which cores have no data?
+cores.nodata = clim.rwi.out %>%
+  group_by(tree.id) %>%
+  summarize(non_na = sum(!is.na(raw_width))) %>%
+  filter(non_na == 0)
+
+tree.ids.nodata = cores.nodata$tree.id
+
+cores.summary = clim.rwi.out %>%
+  filter(!is.na(raw_width)) %>%
+  group_by(tree.id) %>%
+  summarize(last_year = max(year),
+            first_year = min(year),
+            nyears = last_year-first_year) 
+
+if(length(tree.ids.nodata) > 0) {
+  trees.nodata.summary = data.frame(tree.id=tree.ids.nodata,last_year=NA,first_year=NA,nyears=0)
+  cores.summary = bind_rows(cores.summary,trees.nodata.summary)
+}
 
 
+## pull in cores that were truncated to no rings due to poor align throughout, mult potential alignments.
 
+truncs.df = data.frame(tree.id = names(truncs),trunc=truncs)
 
+cores_summary = full_join(cores.summary,truncs.df) %>%
+  mutate(nyears = ifelse(is.na(nyears),-1,nyears)) %>%
+  mutate(nyears = nyears+1)
 
+trees_for_summary = trees %>%
+  select(tree.id,species, dbh, plot.id, cluster)
+
+cores_summary = left_join(cores_summary,trees_for_summary,by="tree.id") %>%
+  select(cluster,plot.id,species,tree.id,everything()) %>%
+  arrange(cluster,plot.id,species,tree.id)
+
+## now make a plot summary
+
+plot_summary = cores_summary %>%
+  group_by(cluster,plot.id,species) %>%
+  summarize(over_15y = sum(nyears>15),
+            over_30y = sum(nyears>30),
+            over_50y = sum(nyears>50))
 
 
 

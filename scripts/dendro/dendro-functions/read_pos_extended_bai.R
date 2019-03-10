@@ -538,14 +538,14 @@ clean.chron <- function(chron,trunc.unjustified.by.image = TRUE,clean_using_alig
   }
   
   
-  # any cores with widths that are all NAs: remove them from data returned.
-  # also remove cores with less than 3 ring widths
+  # # any cores with widths that are all NAs: remove them from data returned.
+  # # also remove cores with less than 3 ring widths
   nyears <- colSums(!is.na(widths))
   widths.ret <- widths[,nyears>3]
   nyears <- nyears[nyears > 3]
-  truncs = truncs[nyears > 3]
-  ages = ages[nyears > 3]
-  radii = radii[nyears > 3]
+   truncs = truncs[nyears > 3]
+   ages = ages[nyears > 3]
+   radii = radii[nyears > 3]
   
   
   ret <- list(chron=widths.ret,nyears=nyears,trunc=truncs,age=ages,radius=radii)
@@ -750,15 +750,15 @@ open_cluster_chron_truncate_window = function(focal_cluster,trunc_unjustified,wi
   
   
   ## Open all cores, clean, compare against the ref, find where correlation goes bad
-  chron = open.chron(cluster_summary$cores_in_cluster,NA,unc.stop=TRUE,cr.del=TRUE,ab.stop=TRUE, core.name=FALSE)
+  chron = open.chron(cluster_summary$cores_in_cluster,cluster_summary$cores_in_cluster,unc.stop=TRUE,cr.del=TRUE,ab.stop=TRUE, core.name=FALSE)
   
   ## convert the core names to tree ids
-  names(chron$chron) = str_replace(names(chron$chron),pattern="[aAbBzZ]",replacement="")
-  names(chron$trunc) = str_replace(names(chron$trunc),pattern="[aAbBzZ]",replacement="")
-  names(chron$nrings) = str_replace(names(chron$nrings),pattern="[aAbBzZ]",replacement="")
-  names(chron$age) = str_replace(names(chron$age),pattern="[aAbBzZ]",replacement="")
-  names(chron$radius) = str_replace(names(chron$radius),pattern="[aAbBzZ]",replacement="")
-  names(chron$core) = str_replace(names(chron$core),pattern="[aAbBzZ]",replacement="")
+  names(chron$chron) = get_tree_name(names(chron$chron))
+  names(chron$trunc) = get_tree_name(names(chron$trunc))
+  names(chron$nrings) = get_tree_name(names(chron$nrings))
+  names(chron$age) = get_tree_name(names(chron$age))
+  names(chron$radius) = get_tree_name(names(chron$radius))
+  names(chron$core) = get_tree_name(names(chron$core))
   
   chron2 = clean.chron(chron, drop_mult_potential_ways=TRUE, drop_poor_align_throughout = TRUE, trunc.unjustified.by.image = TRUE, clean_using_alignment=FALSE)
   chron3 = spline.na.rm(chron2$chron)
@@ -783,9 +783,29 @@ open_cluster_chron_truncate_window = function(focal_cluster,trunc_unjustified,wi
     series = chron_rwi[,c(core,"year")]
     names(series) = c("width","year")
     
-    # plot(ref$width~ref$year,type="l")
-    # lines(series$width~series$year,col="red")
+    # plot(norm(ref$width)~ref$year,type="l")
+    # lines(norm(series$width)~series$year,col="red")
     # 
+    # 
+    # ###tem;
+    # ref2 = ref
+    # names(ref2) = c("ref","samp","year")
+    # 
+    # series2 = series
+    # names(series) = c("core","year")
+    # 
+    # series.ref = left_join(series2,ref2)
+    # 
+    # row.names(series.ref) = series.ref$year
+    # 
+    # series.ref = series.ref %>%
+    #   select(width,ref)
+    #   
+    # detrended = spline.na.rm(series.ref)
+    # detrended$year= row.names(detrended)
+    # 
+    # plot(detrended$width~detrended$year,type="l",col="red")
+    # lines(detrended$ref~detrended$year,col="black")
     
     ## run a moving window of correlations
     first_year = min(series[!is.na(series$width),]$year) %>% as.numeric
@@ -793,6 +813,12 @@ open_cluster_chron_truncate_window = function(focal_cluster,trunc_unjustified,wi
     first_center = first_year + window_width/2
     last_center = last_year - window_width/2
     window_centers = last_center:first_center
+    
+    ##make sure core has at least window_width number of years
+    if((last_year-first_year) < (window_width+2)) {
+      next()
+    }
+    
     
     cor_windows = data.frame()
     for(center in window_centers) {
@@ -806,7 +832,7 @@ open_cluster_chron_truncate_window = function(focal_cluster,trunc_unjustified,wi
       
       if(length(ref_window) < window_width+1) next() #reached the end of the reference chronology
       
-      window_cor = cor(series_window,ref_window,use="complete.obs")
+      window_cor = cor(norm(series_window),norm(ref_window),use="complete.obs",method="pearson")
       
       cor_window = data.frame(year=center,cor=window_cor)
       
@@ -846,7 +872,7 @@ open_cluster_chron_truncate_window = function(focal_cluster,trunc_unjustified,wi
     if(truncate_year != -Inf) {
       chron_rwi[chron_rwi$year<truncate_year,core] = NA
       chron_raw[chron_raw$year<truncate_year,core] = NA
-      truncs[core] = "align_drops"
+      truncs[core] = paste0("alignment_drops, ",truncs[core])
     }
     
     

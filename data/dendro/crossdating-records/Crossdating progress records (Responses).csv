@@ -1299,3 +1299,5 @@ Timestamp,Core number,Newer record exists?,Core has multiple records?,Modificati
 3/7/2019 12:00:01,4031,,,"Added ring(s), Removed ring(s)",,Yes,,,No,"Andrew deleted a potential false ring that made sense in the image, and added back in a ring where it had been previously deleted in a way that did not make sense in the image",Andrew,,Cluster,One clear way,
 3/7/2019 12:02:43,1084,,,"Dated core, Removed ring(s)",,Yes,Good alignment throughout,,No,,Derek,,Cluster,Multiple potential ways,
 3/7/2019 14:39:55,1471,,,Added ring(s),,Yes,Good alignment through year X,1985,No,,Derek,,Cluster,One clear way,
+3/10/2019 10:22:26,1215,,,Dated core,1985,No,Good alignment through year X,1955,No,,Derek,,Cluster,One clear way,
+3/10/2019 10:24:16,1216,,,Dated core,,,Good alignment through year X,1985,No,,Derek,,Cluster,One clear way,
