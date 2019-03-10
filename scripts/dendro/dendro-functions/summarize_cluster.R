@@ -11,7 +11,7 @@ list.plots <- function() {
 
 
 
-summarize.cluster <- function(cluster,type="cluster",name=cluster,clean.ref.chron=FALSE) {
+summarize.cluster <- function(cluster,type="cluster",name=cluster,clean.ref.chron=TRUE,drop_mult_potential_ways=TRUE, drop_poor_align_throughout=TRUE, trunc_unjustified =TRUE,...) {
 
   name = paste(name,collapse="") # in case a vector of core names was provided for the cluster and there was no additional name provided
   
@@ -84,10 +84,8 @@ summarize.cluster <- function(cluster,type="cluster",name=cluster,clean.ref.chro
     
   open.chron.results <- open.chron(cores.cluster,cores.cluster,unc.stop=TRUE,core.name=TRUE)
   
-  ##!! NOTE that this script does not clean the ring-width series based on the crossdating progress records (e.g., areas of poor correlation to a reference chronology)
-  
   if(clean.ref.chron == TRUE) {
-    open.chron.results = clean.chron(open.chron.results)
+    open.chron.results = clean.chron(open.chron.results, drop_mult_potential_ways=drop_mult_potential_ways, drop_poor_align_throughout = drop_poor_align_throughout, trunc.unjustified.by.image = trunc_unjustified)
     chron <- open.chron.results[["chron"]]
     trunc <- open.chron.results[["trunc"]]
     nrings <- open.chron.results[["nyears"]]
@@ -129,16 +127,16 @@ summarize.cluster <- function(cluster,type="cluster",name=cluster,clean.ref.chro
   chron.dated <- chron.detrended[,dated.list]
   chron.dated <- chron.dated[as.numeric(rownames(chron.dated)) < 2015,] # remove the 3000's chrons (which means they don't have a date)
   
-  corr <- corr.rwl.seg(chron.dated,seg.length=20,bin.floor=14,prewhiten=TRUE,pcrit=0.1,label.cex=.7,main=paste("All dated cores in cluster",name))
+  corr <- corr.rwl.seg(chron.dated,seg.length=20,bin.floor=14,prewhiten=FALSE,pcrit=0.1,label.cex=.7,main=paste("All dated cores in cluster",name))
   
   # use only cores that had overall rho > 0.4
   corr.overall <- as.data.frame(corr$overall)
-  ref.cores <- rownames(corr.overall[corr.overall$rho > 0.4,])
+  ref.cores <- rownames(corr.overall[corr.overall$rho > 0.5,])
   
   if(length(ref.cores) < 4) stop("Too few cores in reference chronology. That is, too few cores that correlate well with the mean across all cores in the cluster.")
   
   chron.dated.ref <- chron.dated[,ref.cores]
-  corr.ref <- corr.rwl.seg(chron.dated.ref,seg.length=20,bin.floor=14,pcrit=0.10,prewhiten=TRUE,label.cex=.7,main=paste("Cores in reference chronology for",name))
+  corr.ref <- corr.rwl.seg(chron.dated.ref,seg.length=20,bin.floor=14,pcrit=0.10,prewhiten=FALSE,label.cex=.7,main=paste("Cores in reference chronology for",name))
   
   # add a col to the dated cores list for whether it is included in master chron (i.e., rho > 0.5)
   dated.cores.list.2$ref.chron <- ifelse(dated.cores.list.2$sample %in% ref.cores,TRUE,FALSE)
@@ -150,32 +148,35 @@ summarize.cluster <- function(cluster,type="cluster",name=cluster,clean.ref.chro
   dated.cores.list.4 <- dated.cores.list.3[,c("tree.id","sample","species","ref.chron","dated","truncated","nrings")]
   dated.cores.list.4$sample.clean <- gsub("T","",dated.cores.list.4$sample)
 
-  # load in comments from crossdating progress records
+  # # load in comments from crossdating progress records
+  # 
+  # crossdating.records <- read.csv("data/dendro/crossdating-records/Crossdating progress records (Responses).csv")
+  # 
+  # 
+  # if(length(crossdating.records) == 0) {
+  #   
+  #   cat("!!! Could not connect to Google spreadsheet.\n!!! Previously-processed cores cannot be displayed in cluster summary.\n")
+  #   crossdating.records <- data.frame("Core number"=NA,Person=NA,Timestamp=NA)
+  #   names(crossdating.records) <- c("Core number","Person","Timestamp")
+  # 
+  # } else {
+  #   crossdating.records <- crossdating.records[rowSums(is.na(crossdating.records)) != ncol(crossdating.records),] # remove empty rows
+  # 
+  #   # take only the most recent entry for each core
+  #   crossdating.records <- crossdating.records[nrow(crossdating.records):1,] # reverse order
+  #   crossdating.records.dups <- duplicated(crossdating.records$Core.number)
+  #   crossdating.records <- crossdating.records[!crossdating.records.dups,]
+  # 
+  # }
+  # 
+  # crossdating.records$Core.number = toupper(crossdating.records$Core.number)
+  # 
+  # cluster.summary <- merge(dated.cores.list.4,crossdating.records[,c("Core.number","Person","Timestamp","Core.status","Good.alignment.through.year","Other.notes","Derek.double.check.needed.")],by.x="sample.clean",by.y="Core.number",all.x=TRUE)
+  # names(cluster.summary) <- c("sample.clean","tree.id","sample","species","ref.chron","dated","truncated","nrings","completed.by","completed.date","previous crossdating results","Alignment good through","previous crossdating notes","previous crossdating notes2")
+
+  cluster.summary <- dated.cores.list.4
+  names(cluster.summary) <- c("tree.id","sample","species","ref.chron","dated","truncated","nrings","sample.clean")
   
-  crossdating.records <- read.csv("data/dendro/crossdating-records/Crossdating progress records (Responses).csv")
-
-  
-  if(length(crossdating.records) == 0) {
-    
-    cat("!!! Could not connect to Google spreadsheet.\n!!! Previously-processed cores cannot be displayed in cluster summary.\n")
-    crossdating.records <- data.frame("Core number"=NA,Person=NA,Timestamp=NA)
-    names(crossdating.records) <- c("Core number","Person","Timestamp")
-  
-  } else {
-    crossdating.records <- crossdating.records[rowSums(is.na(crossdating.records)) != ncol(crossdating.records),] # remove empty rows
-
-    # take only the most recent entry for each core
-    crossdating.records <- crossdating.records[nrow(crossdating.records):1,] # reverse order
-    crossdating.records.dups <- duplicated(crossdating.records$Core.number)
-    crossdating.records <- crossdating.records[!crossdating.records.dups,]
-
-  }
-
-  crossdating.records$Core.number = toupper(crossdating.records$Core.number)
-
-  cluster.summary <- merge(dated.cores.list.4,crossdating.records[,c("Core.number","Person","Timestamp","Core.status","Good.alignment.through.year","Other.notes","Derek.double.check.needed.")],by.x="sample.clean",by.y="Core.number",all.x=TRUE)
-  names(cluster.summary) <- c("sample.clean","tree.id","sample","species","ref.chron","dated","truncated","nrings","completed.by","completed.date","previous crossdating results","Alignment good through","previous crossdating notes","previous crossdating notes2")
-
 
 
   #if more than one entry per core, use most recent (lowest down)
@@ -227,6 +228,11 @@ summarize.cluster <- function(cluster,type="cluster",name=cluster,clean.ref.chro
   cat("--------------------------------------------\n")
   
   
+  cluster_summary = list()
+  cluster_summary$cores_in_cluster = dated.cores.list.4$sample
+  cluster_summary$ref_chron = chron.dated.ref.mean
+  
+  return(cluster_summary)
   
   #### Inspecting individual cores ####
   # core to inspect
@@ -240,7 +246,8 @@ summarize.cluster <- function(cluster,type="cluster",name=cluster,clean.ref.chro
   #ccf.series.rwl(chron.dated.ref.mean,series=chron[,focal.core],series.yrs=as.numeric(rownames(chron)),seg.length=20,bin.floor=0,prewhiten=FALSE)
 
   #CDendro-type plot
-  # series.rwl.plot(chron.dated,series=names(chron.dated)[5],seg.length=10,bin.floor=0)
+  # series.rwl.plot(chron.dated,series="2006",seg.length=10,bin.floor=0)
+  
   
   
 }

@@ -373,7 +373,7 @@ open.chron <- function(samples,samples.secondary=NA,unc.stop=TRUE,cr.del=TRUE,ab
 }
 
 
-clean.chron <- function(chron,trunc.unjustified.by.image = TRUE) {
+clean.chron <- function(chron,trunc.unjustified.by.image = TRUE,clean_using_alignment = FALSE, drop_poor_align_throughout = TRUE, drop_mult_potential_ways = TRUE) {
   
   widths <- chron$chron
   truncs <- chron$trunc
@@ -395,8 +395,7 @@ clean.chron <- function(chron,trunc.unjustified.by.image = TRUE) {
     dplyr::summarize(most.recent.unjustified.mod = max(`If.modification.did.not.make.sense.in.image...`,na.rm=TRUE)) %>%
     filter(most.recent.unjustified.mod > 0)
   
-  
-  
+
   #get most recent record for each core
   cd.mostrecent <- cd.records[!duplicated(cd.records$Core.number,fromLast=TRUE),]
   
@@ -409,6 +408,7 @@ clean.chron <- function(chron,trunc.unjustified.by.image = TRUE) {
     
     core <- cores[i]
     sample <- names(widths)[i]
+    trunc = truncs[i]
     
     core <- toupper(core)
     sample <- toupper(sample)
@@ -443,66 +443,83 @@ clean.chron <- function(chron,trunc.unjustified.by.image = TRUE) {
     }
     
     
-    if(cd.mostrecent.samp$Was.alignment.limited.by.reference.chronology.length == "Yes") {
-      if(is.na(cd.mostrecent.samp$Good.alignment.through.year)) {
-        cat("Alignment limited by ref chron but last year of alignment not specified for core: ",core,"; using most recent 40 years.\n")
+    if(clean_using_alignment == TRUE) {
+    
+      
+      if(cd.mostrecent.samp$Was.alignment.limited.by.reference.chronology.length == "Yes") {
+            if(is.na(cd.mostrecent.samp$Good.alignment.through.year)) {
+              cat("Alignment limited by ref chron but last year of alignment not specified for core: ",core,"; using most recent 40 years.\n")
+                
+              # clip to most recent 40 years (set widths to NA after 40 years)
+              yr.40 <- dated.samp - 39
+              widths[(years<yr.40),sample]
+            
+            }
+            
+      
+            
+          }
           
-        # clip to most recent 40 years (set widths to NA after 40 years)
-        yr.40 <- dated.samp - 39
-        widths[(years<yr.40),sample]
+          if(cd.mostrecent.samp$Core.status == "Alignment good through year X") {
+            if(is.na(cd.mostrecent.samp$Good.alignment.through.year)) {
+              cat("Alignment good through year X, but year X not specified for core: ",core,"; using most recent 40 years.\n")
       
+              # clip to most recent 40 years (set widths to NA after 40 years)
+              yr.40 <- dated.samp - 39
+              widths[(years<yr.40),sample] <- NA
+            
+            } else {
+              
+              #drop ring widths from poor-alignment section
+              last.good.alignment <- cd.mostrecent.samp$Good.alignment.through.year
+              widths[(years<last.good.alignment),sample] <- NA
+              
+            }
+          }
+          
+          if(cd.mostrecent.samp$Core.status %in% c("Poor alignment  throughout","Poor alignment throughout")) {
+            cat("Core",core,"has poor alignment throughout; dropping ring width data, and age estimate may be inaccurate.\n")
+            widths[,sample] <- NA
+            
+            next()
+          }
+          
+          
+          status.options <- c("Poor alignment throughout","Poor alignment  throughout","Good alignment throughout","Good alignment through year X")
+          if(!(cd.mostrecent.samp$Core.status %in% status.options)) {
+            cat("Core alignment status unrecognized for core",core,"; proceeding anyway.\n")      
+          }
+    }
+    
+    if(drop_poor_align_throughout == TRUE) {
+      if(cd.mostrecent.samp$Core.status %in% c("Poor alignment  throughout","Poor alignment throughout")) {
+        cat("Core",core,"has poor alignment throughout; dropping ring width data, and age estimate may be inaccurate.\n")
+        widths[,sample] <- NA
+        truncs[sample] = "poor_align_throughout"
+        next()
+      }
+    }
+    
+    if(drop_mult_potential_ways == TRUE) {
+      
+      if(cd.mostrecent.samp$Were.there.multiple.potential.ways.to.get.good.alignment. == "Multiple potential ways") {
+        cat("Core",core,"has multiple potential alignments; dropping ring width data, and age estimate may be inaccurate.\n")
+        widths[,sample] <- NA
+        truncs[sample] = "multiple_alignments"
+      
+        next()
       }
       
-
-      
     }
-    
-    if(cd.mostrecent.samp$Core.status == "Alignment good through year X") {
-      if(is.na(cd.mostrecent.samp$Good.alignment.through.year)) {
-        cat("Alignment good through year X, but year X not specified for core: ",core,"; using most recent 40 years.\n")
-
-        # clip to most recent 40 years (set widths to NA after 40 years)
-        yr.40 <- dated.samp - 39
-        widths[(years<yr.40),sample] <- NA
-      
-      } else {
-        
-        #drop ring widths from poor-alignment section
-        last.good.alignment <- cd.mostrecent.samp$Good.alignment.through.year
-        widths[(years<last.good.alignment),sample] <- NA
-        
-      }
-    }
-    
-    if(cd.mostrecent.samp$Core.status %in% c("Poor alignment  throughout","Poor alignment throughout")) {
-      cat("Core",core,"has poor alignment throughout; dropping ring width data, and age estimate may be inaccurate.\n")
-      widths[,sample] <- NA
-      
-      next()
-    }
-    
-    
-    status.options <- c("Poor alignment throughout","Poor alignment  throughout","Good alignment throughout","Good alignment through year X")
-    if(!(cd.mostrecent.samp$Core.status %in% status.options)) {
-      cat("Core alignment status unrecognized for core",core,"; proceeding anyway.\n")      
-    }
-
     
 
     if(trunc.unjustified.by.image == TRUE) {
     
       # look up and truncate at most recent unclear modification date if one exists. This is the most recent date at which, in order to get good alignment, the analyst had to mark a ring that did not make sense in the image
       
-      ## first do this using the measurement checking spreadsheet (older)
-      unc.records <- read.csv("data/dendro/crossdating-records/Measurement checking_cleaned.csv")
-      unc.records$ID <- toupper(unc.records$ID)
-      unc.year <- unc.records[which(unc.records$ID == core),]$Most.recent.year.of.unclear.modification
-      
-      
-      ## now also do this using the crossdating progress records
       unjustified.year <- mod.justification[mod.justification$Core.number == core,]$most.recent.unjustified.mod
       
-      unc.year <- c(unc.year,unjustified.year)
+      unc.year <- unjustified.year
       
       
       if(length(unc.year) > 1) unc.year <- max(unc.year,na.rm=TRUE) # if there is more then one answer due to some fluke, use the most recent year
@@ -511,10 +528,11 @@ clean.chron <- function(chron,trunc.unjustified.by.image = TRUE) {
           
           cat("Truncating at most recent year of modification unsupported by image (",unc.year,") for core:",core,"\n")
           widths[(years<=unc.year),sample] <- NA
+          truncs[sample] = "unjustified_mod"
         }
       }
       
-      #make a flag for truncated? probably not necessary
+
     }
     
   }
@@ -525,6 +543,11 @@ clean.chron <- function(chron,trunc.unjustified.by.image = TRUE) {
   nyears <- colSums(!is.na(widths))
   widths.ret <- widths[,nyears>3]
   nyears <- nyears[nyears > 3]
+  truncs = truncs[nyears > 3]
+  ages = ages[nyears > 3]
+  radii = radii[nyears > 3]
+  
+  
   ret <- list(chron=widths.ret,nyears=nyears,trunc=truncs,age=ages,radius=radii)
   
   return(ret)
@@ -712,3 +735,124 @@ ba.bai.calc <- function(widths,radius) {
 #   chrons.widths <- lapply(chrons.trees,open.chron)
 #   return(chrons.widths)
 # }
+
+
+
+
+open_cluster_chron_truncate_window = function(focal_cluster,trunc_unjustified,window_width, cor_threshold, max_bad_years, min_good_years) {
+  
+  
+  ## Summarize the cluster.
+  ## In doing so, clean it, specifically: truncate where unjustified by image, where poor alignment throughout, and where multiple potential ways
+  
+  
+  cluster_summary = summarize.cluster(cluster = focal_cluster,type = "cluster",clean.ref.chron=TRUE, clean_using_alignment=FALSE, drop_mult_potential_ways=TRUE, drop_poor_align_throughout=TRUE, trunc_unjustified =TRUE) # clean.ref.chron (which is true by default) truncates the core when corssdating records indicate: a ring removal or addition did not make sense in the image; crossdating was limited by reference chronology length 
+  
+  
+  ## Open all cores, clean, compare against the ref, find where correlation goes bad
+  chron = open.chron(cluster_summary$cores_in_cluster,NA,unc.stop=TRUE,cr.del=TRUE,ab.stop=TRUE, core.name=FALSE)
+  
+  ## convert the core names to tree ids
+  names(chron$chron) = str_replace(names(chron$chron),pattern="[aAbBzZ]",replacement="")
+  names(chron$trunc) = str_replace(names(chron$trunc),pattern="[aAbBzZ]",replacement="")
+  names(chron$nrings) = str_replace(names(chron$nrings),pattern="[aAbBzZ]",replacement="")
+  names(chron$age) = str_replace(names(chron$age),pattern="[aAbBzZ]",replacement="")
+  names(chron$radius) = str_replace(names(chron$radius),pattern="[aAbBzZ]",replacement="")
+  names(chron$core) = str_replace(names(chron$core),pattern="[aAbBzZ]",replacement="")
+  
+  chron2 = clean.chron(chron, drop_mult_potential_ways=TRUE, drop_poor_align_throughout = TRUE, trunc.unjustified.by.image = TRUE, clean_using_alignment=FALSE)
+  chron3 = spline.na.rm(chron2$chron)
+  chron_rwi = chron3
+  chron_rwi$year = row.names(chron_rwi)
+  chron_raw = chron2$chron
+  chron_raw$year = row.names(chron_raw)
+  truncs = chron2$trunc
+  ages = chron2$age
+  radii = chron2$radius
+  radii <- data.frame(tree.id=names(radii),radius=radii)
+  
+  ref = cluster_summary$ref_chron
+  ref$year = row.names(ref)
+  names(ref) = c("width","samp.depth","year")
+  
+  for(i in seq_along(names(chron_rwi))) {
+    
+    core = names(chron_rwi)[i]
+    if(core == "year") next()
+    
+    series = chron_rwi[,c(core,"year")]
+    names(series) = c("width","year")
+    
+    # plot(ref$width~ref$year,type="l")
+    # lines(series$width~series$year,col="red")
+    # 
+    
+    ## run a moving window of correlations
+    first_year = min(series[!is.na(series$width),]$year) %>% as.numeric
+    last_year = max(series[!is.na(series$width),]$year) %>% as.numeric
+    first_center = first_year + window_width/2
+    last_center = last_year - window_width/2
+    window_centers = last_center:first_center
+    
+    cor_windows = data.frame()
+    for(center in window_centers) {
+      
+      window_low = center - window_width/2
+      window_high = center + window_width/2
+      window = window_low:window_high
+      
+      series_window = series[series$year %in% window,]$width
+      ref_window = ref[ref$year %in% window,]$width
+      
+      if(length(ref_window) < window_width+1) next() #reached the end of the reference chronology
+      
+      window_cor = cor(series_window,ref_window,use="complete.obs")
+      
+      cor_window = data.frame(year=center,cor=window_cor)
+      
+      cor_windows = rbind(cor_windows,cor_window)  
+      
+    }
+    
+    #plot(cor~year,data=cor_windows,type="l",main=core,ylim=c(-1,1))
+    
+    # encode the cor as either good or bad
+    cor_windows = cor_windows %>%
+      mutate(quality = ifelse(cor > cor_threshold,"good","bad"))
+    
+    quality_runs = rle(cor_windows$quality)
+    run_lengths = rep(quality_runs$lengths,times=quality_runs$lengths)
+    cor_windows$qual_num = ifelse(cor_windows$quality=="good",run_lengths,NA)
+    
+    cor_windows = cor_windows %>%
+      mutate(!!!leads(qual_num,max_bad_years))
+    
+    lead_cols = cor_windows %>% select(starts_with("lead_qual_num")) %>% names()
+    
+    cor_windows = cor_windows %>%
+      mutate(max_past_qual = pmax(!!!rlang::syms(lead_cols),na.rm=TRUE)) %>%
+      mutate(max_past_qual = ifelse(is.na(max_past_qual),0,max_past_qual)) %>%
+      dplyr::select(-starts_with("lead_qual_num"))
+    
+    
+    ### find the first year where the quality is bad and the max_past_qual is less then the min_good_length
+    bad_rows = cor_windows %>%
+      filter(quality == "bad" &
+               max_past_qual < min_good_years)    
+    most_recent_bad_year = max(bad_rows$year)
+    truncate_year = most_recent_bad_year + window_width/2
+    
+    #remove the ring width data from the bad year and older
+    if(truncate_year != -Inf) {
+      chron_rwi[chron_rwi$year<truncate_year,core] = NA
+      chron_raw[chron_raw$year<truncate_year,core] = NA
+      truncs[core] = "align_drops"
+    }
+    
+    
+  }
+  
+  return(list(chron_rwi=chron_rwi,chron_raw=chron_raw,truncs=truncs,radii=radii,ages=ages))
+}
+
+
