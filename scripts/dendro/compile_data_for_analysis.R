@@ -138,6 +138,9 @@ library(reshape)
 rwi.melt <- melt(chron_rwi,id.vars="year",variable_name="tree.id")
 names(rwi.melt)[3] <- "rwi"
 
+raw.melt = melt(chron_raw,id.vars="year",variable_name="tree.id")
+names(raw.melt)[3] <- "raw_width"
+
 #internal radius BA data
 ba.melt <- melt(ba,id.vars="year",variable_name="tree.id")
 bai.melt <- melt(bai,id.vars="year",variable_name="tree.id")
@@ -162,6 +165,7 @@ names(ba.ext.prev.melt)[3] <- "ba.ext.prev"
 trees.clim$tree.id <- toupper(trees.clim$tree.id)
 rwi.melt$tree.id <- toupper(rwi.melt$tree.id)
 clim.rwi <- merge(trees.clim,rwi.melt,by=c("tree.id","year")) # only get climate for trees and years that have RWI data
+clim.rwi <- merge(clim.rwi,raw.melt,by=c("tree.id","year"))
 clim.rwi <- merge(clim.rwi,ba.melt,by=c("tree.id","year"),all.x=TRUE)
 clim.rwi <- merge(clim.rwi,bai.melt,by=c("tree.id","year"),all.x=TRUE)
 clim.rwi <- merge(clim.rwi,bai.ba.melt,by=c("tree.id","year"),all.x=TRUE)
@@ -276,6 +280,10 @@ plot(radius~dbh,data=trees.out[trees.out$dbh < 100,])
 #### Summary and diagnostic statistics ####
 
 ## For each core, get its start year, end year, nyears, trunc reason, plot, and species
+
+
+
+
 
 
 
