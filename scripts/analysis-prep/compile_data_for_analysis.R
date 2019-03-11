@@ -1,32 +1,15 @@
-setwd("~/UC Davis/Research Projects/Sierra dendro/sierra-dendro") # Derek on Derek's computer
-setwd("~/Research projects/Sierra dendro/sierra-dendro") # Derek on Latim-GIS-S
-
-
-
-
-# load the summarize.cluster() function and several other convenience functions
-source("scripts/dendro/dendro-functions/summarize_cluster.R")
-
-
+library(plyr)
+library(dplR)
 library(dplyr)
 library(purrr)
 library(stringr)
 library(reshape)
 
-leads <- function(var, n=10){
-  var <- enquo(var)
-  
-  indices <- seq_len(n)
-  map( indices, ~quo(lead(!!var, !!.x)) ) %>% 
-    set_names(sprintf("lead_%s_%02d", rlang::quo_text(var), indices))
-  
-}
+setwd("~/UC Davis/Research Projects/Sierra dendro/sierra-dendro") # Derek on Derek's computer
+setwd("~/Research projects/Sierra dendro/sierra-dendro") # Derek on Latim-GIS-S
 
-
-tree.ring.folder = "data/dendro/coorecorder-measurements" # on repository
-
-
-
+# Load crossdating functions
+source("scripts/dendro/dendro_functions.R")
 
 
 #### Read in tree data ####
@@ -45,7 +28,6 @@ trees$dbh <- as.numeric(as.character(trees$dbh))
 #do any trees have duplicate samples?
 ndup <- sum(duplicated(trees$tree.id))
 if(ndup > 0) {warning("Some tree ids duplicated in trees_loc spreadsheet.")}
-
 
 
 #### Read in competition data ####
