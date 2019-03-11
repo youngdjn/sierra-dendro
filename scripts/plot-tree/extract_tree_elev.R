@@ -7,7 +7,7 @@ trees = read.csv("data/plot-and-tree/processed/trees_loc.csv",header=TRUE)
 
 if(is.null(trees$elev)) {
   trees_sp = st_as_sf(trees, coords = c("x","y"), crs = 3310)
-  dem = raster("data/non-synced/DEM/CAmerged12_albers2.tif")
+  dem = raster("data/non-synced/DEM/CAmerged14_albers.tif")
   trees$elev = extract(dem,trees_sp,method="bilinear")
 }
 

@@ -47,7 +47,7 @@ truncs = NULL
 radii = NULL
 ages = NULL
 
-focal_clusters = c("SL") # c("NL","NH", "SL","SH") #,"NL","NH")
+focal_clusters = c("NL","NH", "SL","SH") #,"NL","NH")
 
 for(focal_cluster in focal_clusters) {
     

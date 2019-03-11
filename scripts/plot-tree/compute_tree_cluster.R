@@ -21,7 +21,7 @@ trees[(trees$y >= lat.cutoff) & (trees$elev >= n.mid.elev),]$cluster <- "NH"
 write.csv(trees,"data/plot-and-tree/processed/trees_loc.csv",row.names=FALSE)
 
 trees = trees %>%
-  select(tree.id,former.id,species,dbh,x,y,elev,plot.id,cluster) %>%
+  dplyr::select(tree.id,former.id,species,dbh,x,y,elev,plot.id,cluster) %>%
   mutate_at(.vars =vars(x,y,elev),.funs=funs(round))
 
 write.csv(trees,"data/plot-and-tree/processed/trees_loc_simple.csv",row.names=FALSE)
