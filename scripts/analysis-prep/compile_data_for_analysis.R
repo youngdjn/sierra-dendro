@@ -13,7 +13,7 @@ setwd("~/UC Davis/Research Projects/Sierra dendro/sierra-dendro") # Derek on Der
 source("scripts/dendro/dendro_functions.R")
 
 # Refugium trees to exclude
-refugium_trees = c(1222,2250,2551,2552,2589,2590)
+refugium_trees = c(1222,2550,2551,2552,2589,2590)
 
 
 #### Read in tree data ####
