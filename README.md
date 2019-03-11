@@ -6,9 +6,9 @@ Analysis of ~800 tree cores collected across latitudinal and elevational gradien
 
 The analysis-ready data files are located in: [data/compiled-for-analysis/](https://github.com/youngdjn/sierra-dendro/tree/master/data/compiled-for-analysis)
 
-* **plots.csv**: Plot-level data, including coordinates and normal climate. One row per plot.\
-* **trees.csv**: Tree-level data, including species, DBH, plot, and voronoi area. One row per tree.\
-* **years.csv**: Year-level data, including ring widths and annual climate. One row per year per tree.\
+* **plots.csv**: Plot-level data, including coordinates and normal climate. One row per plot.
+* **trees.csv**: Tree-level data, including species, DBH, plot, and voronoi area. One row per tree.
+* **years.csv**: Year-level data, including ring widths and annual climate. One row per year per tree.
 
 
 #### Sample size summary tables
@@ -24,11 +24,11 @@ The analysis-ready data files are located in: [data/compiled-for-analysis/](http
 
 * **rwi**: Ring-width index, computed by dividing the raw width by a 30-year spline\
 * **raw_width**: The raw width in mm\
-* **ba**: The basal area of the tree including that year's growth. Only computed for trees measured to the pith.\
-* **bai**: The basal area increment (the additional basal area grown) that year. Only computed for trees measured to the pith.\
-* **bai.ba**: Basal increment divided by previous year's basal area. Equivalent to relative growth rate of basal area. Only computed for trees measured to the pith.\
-* **ba.prev**: Previous year's BA. Only computed for trees measured to the pith.\
-* **ba.ext, bai.ext, bai.ba.ext, ba.extprev**: Equivalent to the above metrics, but computed based on the tree's measured DBH, using a regression to relate external DBH (which includes bark) to internal DBH (which doesn't). Only computed for trees where the core extends to the bark.\
+* **ba**: The basal area of the tree including that year's growth. Only computed for trees measured to the pith.
+* **bai**: The basal area increment (the additional basal area grown) that year. Only computed for trees measured to the pith.
+* **bai.ba**: Basal increment divided by previous year's basal area. Equivalent to relative growth rate of basal area. Only computed for trees measured to the pith.
+* **ba.prev**: Previous year's BA. Only computed for trees measured to the pith.
+* **ba.ext, bai.ext, bai.ba.ext, ba.extprev**: Equivalent to the above metrics, but computed based on the tree's measured DBH, using a regression to relate external DBH (which includes bark) to internal DBH (which doesn't). Only computed for trees where the core extends to the bark.
 * **ba.comb, bai.comb, bai.ba.comb, ba.prev.comb**: Equivalent to the above metrics, but they are a composite the uses internal BA when it exists and external BA when it doesn't. Still does not cover all trees, because some cores did not extend to the pith AND the core did not extend to the bark.
 
 #### Details on the climate/weather data columns (in years.csv)
