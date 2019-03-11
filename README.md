@@ -15,7 +15,7 @@ The analysis-ready data files are located in: [data/compiled-for-analysis/](http
 
 *Also see "Quality filtering", below, for more details on these tables*
 
-* **[Sample size by plot and species](https://raw.githack.com/youngdjn/sierra-dendro/master/data/dendro/sample_size_summaries/plot_sample_size.html)**\ (The rightmost columns show the number of trees with >15, >30, and >50 rings for each plot-species combination)
+* **[Sample size by plot and species](https://raw.githack.com/youngdjn/sierra-dendro/master/data/dendro/sample_size_summaries/plot_sample_size.html)** (The rightmost columns show the number of trees with >15, >30, and >50 rings for each plot-species combination)
 
 * **[Number of rings and truncation years for each core](https://raw.githack.com/youngdjn/sierra-dendro/master/data/dendro/sample_size_summaries/core_ring_counts.html)** 
 
@@ -70,26 +70,26 @@ Note that we still have to decide whether it is important to do a more local-lev
 
 ## Compiling data for analysis
 
-This has already been done (and the output of the most recent run is in data/compiled-for-analysis/). This only has to be done if there are changes to the underlying raw data (e.g., plot data or ring width measurements) or if the tree ring quality filtering parameters change.
+This has already been done (and the output of the most recent run is in "data/compiled-for-analysis/""). This only has to be done if there are changes to the underlying raw data (e.g., plot data or ring width measurements) or if the tree ring quality filtering parameters change.
 
 Note that compiling analysis-ready data requires some large files that are too big to sync to GitHub. These go in the "data/non-synced" folder of the repo (which you have to create after you clone the repo). They are stored [on Box here](https://ucdavis.box.com/s/3j6dnkzjuyhi3vrarfye81apbbf2ezzi).
 
 The above text documents the data that is already prepared for analysis. Here are details on the scripts that process the raw data (also in the repo) into the analysis-ready data. Scripts are in the folder  Data prep scripts should be run in the following order:
 
-**Process field-based plot data** (scripts in scripts/plot-tree/)
+**Process field-based plot data** (scripts in "scripts/plot-tree/"")
 
 1. **tree_loc_calc.R**: Compute tree locations based on distance and bearing from reference-point coordinates
 2. **extract_tree_elevation.R**: Extract elevation from DEM for each tree
 3. **compute_tree_cluter.R**: Determine the cluter (NL, SL, NH, SH) that each tree belongs to.
 4. **voronoi_calc.R**: Extract the voronoi polygon area for each tree.
 
-**Process climate/weather data** (scripts in scripts/climate-prep)
+**Process climate/weather data** (scripts in "scripts/climate-prep"")
 
 5. *Section not yet completed. Scripts and climate source data files must be ported to the git repo. The scripts are already in the repo, but paths etc need to be updated, and the climate data they depend on must be added. The main script (which runs all the sub-scripts is dendro_climate_compile.R). This step produces the large year-by-tree climate data file tree_clim_full.csv in "data/non-synced/climate-extracted/"*
 
-**Compile all ring width, plot, and climate/weather data for analysis** (script in scripts/analysis-prep/)
+**Compile all ring width, plot, and climate/weather data for analysis** (script in "scripts/analysis-prep/"")
 
-6. **compile_data_for_analysis.R**: Reads in ring-width data, performs quality filtering, and reads in and merges with plot and climate data. This script produces the final files for analysis in data/compiled-for-analysis/. This is the script that contains the parameters to tweak for the moving-window quality filter.
+6. **compile_data_for_analysis.R**: Reads in ring-width data, performs quality filtering, and reads in and merges with plot and climate data. This script produces the final files for analysis in "data/compiled-for-analysis/". This is the script that contains the parameters to tweak for the moving-window quality filter.
 
 
 ## Raw data files
