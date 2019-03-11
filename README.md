@@ -22,8 +22,8 @@ The analysis-ready data files are located in: [data/compiled-for-analysis/](http
 
 #### Details on the ring-width data columns (in years.csv)
 
-* **rwi**: Ring-width index, computed by dividing the raw width by a 30-year spline\
-* **raw_width**: The raw width in mm\
+* **rwi**: Ring-width index, computed by dividing the raw width by a 30-year spline
+* **raw_width**: The raw width in mm
 * **ba**: The basal area of the tree including that year's growth. Only computed for trees measured to the pith.
 * **bai**: The basal area increment (the additional basal area grown) that year. Only computed for trees measured to the pith.
 * **bai.ba**: Basal increment divided by previous year's basal area. Equivalent to relative growth rate of basal area. Only computed for trees measured to the pith.
@@ -44,8 +44,8 @@ The analysis-ready data files are located in: [data/compiled-for-analysis/](http
 
 Tree ring data are filtered (i.e., ring widths are excluded from the data files) in the following ways:
 
-* If the crossdating technician reported multiple equally-good ways to get good alignment, or no good ways, all ring widths are excluded\
-* If the crossdating technician reported adding or removing a ring that was not justified based on the core image (but substantially improved alignment), ring widths from that year and older are excluded (note that this filter is easy to turn off).\
+* If the crossdating technician reported multiple equally-good ways to get good alignment, or no good ways, all ring widths are excluded
+* If the crossdating technician reported adding or removing a ring that was not justified based on the core image (but substantially improved alignment), ring widths from that year and older are excluded (note that this filter is easy to turn off).
 * Using a moving window, the core is compared against its cluster-level reference chronology. If the correlation drops below a certain threshold, the ring widths older than that point are excluded, **unless** the correlation improves again within X years. Improved is defined as being above the correlation threshold for at least Y years. At the time I wrote this, X was 15, Y was 10, the window width was 12, and the correlation threshold was 0.1. All these parameters can easily be tuned. The reference chronology is computed excluding cores that had a ring addition or deletion that was not justified based on the image. The correlation between the focal and reference is evaluated after normalizing both by computing each ring's proportional difference from the average of the two rings adjacent to it.
 
 Filtering (along with many other tasks) is done by the script compile_data_for_analysis.R (in scripts/analysis-prep/).
