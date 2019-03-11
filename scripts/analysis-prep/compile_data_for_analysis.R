@@ -4,12 +4,16 @@ library(dplyr)
 library(purrr)
 library(stringr)
 library(reshape)
+# if raster is loaded, detach to avoid conflicts with dplyr: detach("package:raster",unload=TRUE)
 
 setwd("~/UC Davis/Research Projects/Sierra dendro/sierra-dendro") # Derek on Derek's computer
-setwd("~/Research projects/Sierra dendro/sierra-dendro") # Derek on Latim-GIS-S
+#setwd("~/Research projects/Sierra dendro/sierra-dendro") # Derek on Latim-GIS-S
 
 # Load crossdating functions
 source("scripts/dendro/dendro_functions.R")
+
+# Refugium trees to exclude
+refugium_trees = c(1222,2250,2551,2552,2589,2590)
 
 
 #### Read in tree data ####
@@ -47,7 +51,7 @@ truncs = NULL
 radii = NULL
 ages = NULL
 
-focal_clusters = c("NL","NH", "SL","SH") #,"NL","NH")
+focal_clusters = c("NL", "NH", "SL","SH") #,"NL","NH")
 
 for(focal_cluster in focal_clusters) {
     
@@ -80,7 +84,7 @@ radii = radii2
 #### Compute basal area / BAI ####
 
 ### Using internal radius, where available
-bai.ba.results <- ba.bai.calc(chron_raw %>% select(-year),radii)
+bai.ba.results <- ba.bai.calc(chron_raw %>% dplyr::select(-year),radii)
 ba <- bai.ba.results$ba
 bai <- bai.ba.results$bai
 bai.ba <- bai.ba.results$bai.ba
@@ -192,8 +196,11 @@ trees.clim.rwi = trees.clim.rwi %>%
 clim.rwi.out = clim.rwi %>%
   filter(year > 1800) %>%
   mutate_at(vars(-tree.id,-year),funs(signif)) %>% # truncate to 6 digits
-  select(-(rad.tot:rad.06))
+  select(-(rad.tot:rad.06)) %>%
+  filter(!(tree.id %in% refugium_trees))
+
 write.csv(clim.rwi.out,"data/compiled-for-analysis/years.csv",row.names=FALSE)
+
 
 #### output tree-level data
 trees.out.pre.pre = trees %>%  ## filter to only trees for which we have ring data
@@ -204,6 +211,9 @@ trees.out = left_join(trees.out.pre,radii,by="tree.id")
 ## add the external-radius
 radius.ext <- data.frame(tree.id = names(radius.external),radius.external = radius.external)
 trees.out <- left_join(trees.out,radius.ext,by="tree.id")
+
+trees.out = trees.out %>%
+  filter(!(tree.id %in% refugium_trees))
 
 write.csv(trees.out,"data/compiled-for-analysis/trees.csv",row.names=FALSE)
 
@@ -306,6 +316,3 @@ plot_summary = cores_summary %>%
   summarize(over_15y = sum(nyears>15),
             over_30y = sum(nyears>30),
             over_50y = sum(nyears>50))
-
-
-
