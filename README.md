@@ -74,7 +74,7 @@ This has already been done (and the output of the most recent run is in "data/co
 
 Note that compiling analysis-ready data requires some large files that are too big to sync to GitHub. These go in the "data/non-synced" folder of the repo (which you have to create after you clone the repo). They are stored [on Box here](https://ucdavis.box.com/s/3j6dnkzjuyhi3vrarfye81apbbf2ezzi).
 
-The above text documents the data that is already prepared for analysis. Here are details on the scripts that process the raw data (also in the repo) into the analysis-ready data. Scripts are in the folder  Data prep scripts should be run in the following order:
+The above text documents the data that is already prepared for analysis. Here are details on the scripts that process the raw data (also in the repo) into the analysis-ready data. Scripts should be run in the following order:
 
 **Process field-based plot data** (scripts in "scripts/plot-tree/"")
 
