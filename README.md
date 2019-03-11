@@ -85,7 +85,7 @@ The above text documents the data that is already prepared for analysis. Here ar
 
 **Process climate/weather data** (scripts in "scripts/climate-prep"")
 
-5. *Section not yet completed. Scripts and climate source data files must be ported to the git repo. The scripts are already in the repo, but paths etc need to be updated, and the climate data they depend on must be added. The main script (which runs all the sub-scripts is dendro_climate_compile.R). This step produces the large year-by-tree climate data file tree_clim_full.csv in "data/non-synced/climate-extracted/"*
+5. *Section not yet completed. Scripts and climate source data files must be ported to the git repo. The scripts are already in the repo, but paths etc need to be updated, and the climate data they depend on must be added. The main script (which runs all the sub-scripts is dendro_climate_compile.R). This step produces the large year-by-tree climate data file tree_clim_full.csv in "data/non-synced/climate-extracted/". **Note that this does not need to be re-run when re-compiling the dataset, unless tree IDs, locations, or input climate data have changed.** *
 
 **Compile all ring width, plot, and climate/weather data for analysis** (script in "scripts/analysis-prep/"")
 
