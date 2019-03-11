@@ -4,6 +4,7 @@ library(dplyr)
 library(purrr)
 library(stringr)
 library(reshape)
+library(DT)
 # if raster is loaded, detach to avoid conflicts with dplyr: detach("package:raster",unload=TRUE)
 
 setwd("~/UC Davis/Research Projects/Sierra dendro/sierra-dendro") # Derek on Derek's computer
@@ -316,3 +317,14 @@ plot_summary = cores_summary %>%
   summarize(over_15y = sum(nyears>15),
             over_30y = sum(nyears>30),
             over_50y = sum(nyears>50))
+
+
+## turn these into HTML tables
+
+dt = datatable(plot_summary,options=list(pageLength=1000))
+f<-"data\\dendro\\sample_size_summaries\\plot_sample_size.html"
+saveWidget(dt,file=file.path(normalizePath(dirname(f)),basename(f)),selfcontained=TRUE,title="Number of cores by plot, species, and number of good rings")
+
+dt = datatable(cores_summary,options=list(pageLength=1000))
+f<-"data\\dendro\\sample_size_summaries\\core_ring_counts.html"
+saveWidget(dt,file=file.path(normalizePath(dirname(f)),basename(f)),selfcontained=TRUE,title="Number of rings in each core and reason for truncation")
