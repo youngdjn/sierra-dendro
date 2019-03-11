@@ -323,8 +323,8 @@ plot_summary = cores_summary %>%
 
 dt = datatable(plot_summary,options=list(pageLength=1000))
 f<-"data\\dendro\\sample_size_summaries\\plot_sample_size.html"
-saveWidget(dt,file=file.path(normalizePath(dirname(f)),basename(f)),selfcontained=FALSE,title="Number of cores by plot, species, and number of good rings")
+saveWidget(dt,file=file.path(normalizePath(dirname(f)),basename(f)),selfcontained=TRUE,title="Number of cores by plot, species, and number of good rings")
 
 dt = datatable(cores_summary,options=list(pageLength=1000))
 f<-"data\\dendro\\sample_size_summaries\\core_ring_counts.html"
-saveWidget(dt,file=file.path(normalizePath(dirname(f)),basename(f)),selfcontained=FALSE,title="Number of rings in each core and reason for truncation")
+saveWidget(dt,file=file.path(normalizePath(dirname(f)),basename(f)),selfcontained=TRUE,title="Number of rings in each core and reason for truncation")
