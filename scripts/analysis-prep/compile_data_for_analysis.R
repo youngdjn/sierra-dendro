@@ -5,7 +5,7 @@ library(purrr)
 library(stringr)
 library(reshape)
 library(DT)
-# if raster is loaded, detach to avoid conflicts with dplyr: detach("package:raster",unload=TRUE)
+# if raster package is loaded, detach to avoid conflicts with dplyr: detach("package:raster",unload=TRUE)
 
 setwd("~/UC Davis/Research Projects/Sierra dendro/sierra-dendro") # Derek on Derek's computer
 #setwd("~/Research projects/Sierra dendro/sierra-dendro") # Derek on Latim-GIS-S
@@ -26,7 +26,7 @@ trees <- read.csv("data/plot-and-tree/processed/trees_loc.csv",header=TRUE,strin
 trees$tree.id <- toupper(trees$tree.id)
 trees$former.id <- toupper(trees$former.id)
 former.ids <- trees$former.id
-trees <- trees[!(trees$tree.id %in% former.ids),]
+trees <- trees[!(trees$tree.id %in% former.ids) | trees$tree.id == trees$former.id,] # some trees have the same name listed for current and former ID: those one are not resampled under a different name.
 
 trees$dbh <- as.numeric(as.character(trees$dbh))
 
@@ -52,7 +52,7 @@ truncs = NULL
 radii = NULL
 ages = NULL
 
-focal_clusters = c("NL", "NH", "SL","SH") #,"NL","NH")
+focal_clusters =c("NL", "NH", "SL","SH") #,"NL","NH")
 
 for(focal_cluster in focal_clusters) {
     
