@@ -3,41 +3,12 @@
 #DPI 1200.0
 #All coordinates in millimeters (mm)
 SCALE 1
-#C DATED 2013
-#C DistanceToPith=5.9; YearsToPith=2; Radius=193.082; CalcRadius=Yes; 
-#C PithCoordinates=252.476,-3.556; 
+#C DATED 1999
+#C DistanceToPith=5.9; YearsToPith=2; Radius=89.493; CalcRadius=Yes; 
+#C PithCoordinates=1.080,0.000; 
 #C CooRecorder=7.8 July 8 2014; 
-#C LicencedTo=Derek Young, djyoung@udcavis.edu; 
-59.626,5.715 
-D60.621,5.715 #W#
-61.807,5.630 
-D62.759,5.630 #W#
-64.495,5.524 
-D64.855,5.546 #W#
-65.595,5.546 
-D65.849,5.567 #W#
-66.760,5.546 
-D67.183,5.567 #W#
-68.432,5.546 
-D69.003,5.546 #W#
-70.802,5.546 
-D71.522,5.546 #W#
-73.448,5.546 
-D74.168,5.546 #W#
-75.946,5.546 
-D76.369,5.503 #W#
-79.481,5.567 
-D80.137,5.567 #W#
-81.661,5.567 
-D82.338,5.567 #W#
-83.756,5.567 
-D84.307,5.567 #W#
-85.788,5.567 
-D86.550,5.567 #W#
-87.948,5.567 
-D88.858,5.588 #W#
-90.424,5.588 
-D90.868,5.588 #W#
+#C LicencedTo=Derek Young, dyoungster@gmail.com; 
+90.403,5.630 
 92.308,5.588 
 D92.900,5.588 #W#
 94.827,5.588 

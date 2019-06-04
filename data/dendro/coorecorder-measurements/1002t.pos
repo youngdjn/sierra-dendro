@@ -5,8 +5,8 @@
 SCALE 1
 #C DATED 2013
 #C pith offset
-#C DistanceToPith=7.4; YearsToPith=2; CalcRadius=Yes; Radius=201.591; 
-#C PithCoordinates=281.644,-1.122; 
+#C DistanceToPith=7.4; YearsToPith=2; CalcRadius=Yes; Radius=80.581; 
+#C PithCoordinates=0.000,0.000; 
 #C CooRecorder=7.8 July 8 2014; 
 #C LicencedTo=Derek Young, dyoungster@gmail.com; 
 80.243,7.472 

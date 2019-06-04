@@ -1,4 +1,4 @@
-#DENDRO (Cybis Dendro program compatible format) Coordinate file written as S:\FacultyData\LATIMER\LATIMERShared\DYoung Dendro\CooRecorder measurements\1471t.pos
+#DENDRO (Cybis Dendro program compatible format) Coordinate file written as C:\Users\djyoung\Documents\Git repositories\sierra-dendro\data\dendro\coorecorder-measurements\1471t.pos
 #Imagefile S:\FacultyData\LATIMER\LATIMERShared\DYoung Dendro\Individual core images\For measuring\1471t.jpg
 #DPI 1200.0
 #All coordinates in millimeters (mm)
@@ -6,7 +6,7 @@ SCALE 1
 #C DATED 2005
 #C no pith
 #C CooRecorder=7.8 July 8 2014; 
-#C LicencedTo=Derek Young, djyoung@udcavis.edu; 
+#C LicencedTo=Derek Young, dyoungster@gmail.com; 
 72.115,5.927 
 D72.326,5.927 #W#
 73.596,5.948 
@@ -39,6 +39,7 @@ D96.922,5.969 #W#
 D98.108,5.969 #W#
 98.975,5.990 
 D99.250,5.990 #W#
+99.991,6.011 
 101.092,5.990 
 D101.579,5.990 #W#
 103.018,5.990 
@@ -97,6 +98,7 @@ D164.634,6.096 #W#
 D166.285,6.096 #W#
 167.132,6.096 
 D167.471,6.096 #W#
+168.381,6.159 
 170.265,6.096 
 D170.984,6.096 #W#
 172.826,6.096 
