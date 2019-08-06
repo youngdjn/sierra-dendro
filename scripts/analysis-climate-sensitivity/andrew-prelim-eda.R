@@ -56,4 +56,29 @@ d_long <- merge(years, trees[,c("tree.id", "species", "plot.id", "x", "y", "elev
 d_long <- merge(d_long, plots[, c("plot.id", "ppt.norm", "tmean.norm", "x.plot", "y.plot", "rad.tot", "rad.03", "rad.06", "voronoi.area.mean", "n.trees")], by="plot.id")
 head(d_long)
 
+##### Run time series model for each tree separately ####
+
+# Goal here is to partition variation for each tree into long-term trend, autocorrelation, and sensitivity to precipitation and temperature. 
+
+# QUESTIONS: 
+
+# What subset of data to use -- should we look only at trees with a record going back a certain number of years? How far back should we look? For consistency, should we look no further back than a few decades?  Keep all species? 
+# Proposal: for now, keep all trees, do analyses on the past 50 years (1965-2014) but check for conflation of patterns with age of tree and length of record. 
+
+# How many trees have ring widths available for each year?
+table(d_long$year[!is.na(d_long$raw_width)])
+plot(table(d_long$year[!is.na(d_long$raw_width)]), type="l")
+
+# What's the distribution of length of records across trees? 
+hist(table(d_long$tree.id[!is.na(d_long$raw_width)]))
+
+# Do we know the age of trees? It seems like we need to include age or size in the model? 
+
+## Subset data for analysis. 
+d <- filter(d_long, year > 1964) # keep last 50 years
+tree_record_length_table <- table(d_long$tree.id[!is.na(d_long$raw_width)])
+min_record_length <- 40 # drop trees with shorter record than this numberr of years
+d <- filter(d_long, tree.id %in% names(tree_record_length_table)[tree_record_length_table >= 40])
+
+
 
