@@ -80,5 +80,9 @@ tree_record_length_table <- table(d_long$tree.id[!is.na(d_long$raw_width)])
 min_record_length <- 40 # drop trees with shorter record than this numberr of years
 d <- filter(d_long, tree.id %in% names(tree_record_length_table)[tree_record_length_table >= 40])
 
+# Test simple time series model 
+
+
+
 
 
