@@ -77,9 +77,12 @@ hist(table(d_long$tree.id[!is.na(d_long$raw_width)]))
 # Show raw_width time series
 ggplot(data=d_long, aes(y=raw_width, x=year)) + geom_line(color="darkgray", aes(group=tree.id)) + geom_smooth(se=FALSE) + theme_classic()
 by_tree <- group_by(d_long, tree.id)
-z <- do(by_tree, tidy(lm(raw_width~year + radius, .)))
+z <- do(by_tree, tidy(lm(raw_width~year, .)))
 trend_coefs <- filter(z, term=="year")$estimate
 hist(trend_coefs) # leans negative, but not by much
+# try looking at resids
+tree_augmented <- do(by_tree, augment(lm(raw_width~year, .)))
+ggplot(tree_augmented, aes(year, .resid)) + geom_line(aes(group = tree.id), alpha = 1 / 3) +  geom_smooth(se = FALSE)
 
 # Note >100 trees seem to be missing density info (voronoi.area)
 sum(is.na(trees$voronoi.area))
@@ -94,7 +97,7 @@ dim(d)
 length(unique(d$tree.id))
 
 # Keep only the necessary columns
-d <- select(d, cluster, plot.id, tree.id, species, year, rwi, raw_width, voronoi.area, radius, ppt.norm, tmean.norm, rad.tot, starts_with("ppt.z"), starts_with("tmean.z"))
+d <- select(d, cluster, plot.id, tree.id, species, year, rwi, raw_width, voronoi.area, radius.external, ppt.norm, tmean.norm, rad.tot, starts_with("ppt.z"), starts_with("tmean.z"))
 head(d)
 
 
