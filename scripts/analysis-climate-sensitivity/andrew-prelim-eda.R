@@ -4,6 +4,7 @@
 
 library(tidyverse)
 library(ggExtra)
+library(broom)
 
 #### Load and merge data ####
 years <- read.csv("./data/compiled-for-analysis/years.csv")
@@ -67,21 +68,34 @@ head(d_long)
 
 # How many trees have ring widths available for each year?
 table(d_long$year[!is.na(d_long$raw_width)])
-plot(table(d_long$year[!is.na(d_long$raw_width)]), type="l")
+plot(table(d_long$year[!is.na(d_long$raw_width)]), type="l", ylab="Number of trees")
 
 # What's the distribution of length of records across trees? 
 hist(table(d_long$tree.id[!is.na(d_long$raw_width)]))
 
 # Do we know the age of trees? It seems like we need to include age or size in the model? 
+# Show raw_width time series
+ggplot(data=d_long, aes(y=raw_width, x=year, group=tree.id)) + geom_line(color="darkgray") + theme_classic()
+by_tree <- group_by(d_long, tree.id)
+z <- do(by_tree, tidy(lm(raw_width~year + radius, .)))
+trend_coefs <- filter(z, term=="year")$estimate
+hist(trend_coefs) # leans negative, but not by much
+
+# Note >100 trees seem to be missing density info (voronoi.area)
+sum(is.na(trees$voronoi.area))
 
 ## Subset data for analysis. 
 d <- filter(d_long, year > 1964) # keep last 50 years
 tree_record_length_table <- table(d_long$tree.id[!is.na(d_long$raw_width)])
-min_record_length <- 40 # drop trees with shorter record than this numberr of years
-d <- filter(d_long, tree.id %in% names(tree_record_length_table)[tree_record_length_table >= 40])
+hist(tree_record_length_table, main="Histogram of tree-ring record lengths")
+min_record_length <- 30 # drop trees with shorter record than this number of years
+d <- filter(d_long, tree.id %in% names(tree_record_length_table)[tree_record_length_table >= min_record_length])
+dim(d)
+length(unique(d$tree.id))
 
-# Test simple time series model 
-
+# Keep only the necessary columns
+d <- select(d, cluster, plot.id, tree.id, species, year, rwi, raw_width, voronoi.area, radius, ppt.norm, tmean.norm, rad.tot, starts_with("ppt.z"), starts_with("tmean.z"))
+head(d)
 
 
 
