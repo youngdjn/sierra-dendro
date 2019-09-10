@@ -75,7 +75,7 @@ hist(table(d_long$tree.id[!is.na(d_long$raw_width)]))
 
 # Do we know the age of trees? It seems like we need to include age or size in the model? 
 # Show raw_width time series
-ggplot(data=d_long, aes(y=raw_width, x=year, group=tree.id)) + geom_line(color="darkgray") + theme_classic()
+ggplot(data=d_long, aes(y=raw_width, x=year)) + geom_line(color="darkgray", aes(group=tree.id)) + geom_smooth(se=FALSE) + theme_classic()
 by_tree <- group_by(d_long, tree.id)
 z <- do(by_tree, tidy(lm(raw_width~year + radius, .)))
 trend_coefs <- filter(z, term=="year")$estimate
