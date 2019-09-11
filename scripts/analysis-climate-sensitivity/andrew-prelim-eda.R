@@ -5,6 +5,7 @@
 library(tidyverse)
 library(ggExtra)
 library(broom)
+library(lme4)
 
 #### Load and merge data ####
 years <- read.csv("./data/compiled-for-analysis/years.csv")
@@ -100,6 +101,21 @@ length(unique(d$tree.id))
 d <- select(d, cluster, plot.id, tree.id, species, year, rwi, raw_width, voronoi.area, radius.external, ppt.norm, tmean.norm, rad.tot, starts_with("ppt.z"), starts_with("tmean.z"))
 head(d)
 
+# Center and scale unstandardized columns 
+d <- mutate(d, ppt.norm.std = scale(ppt.norm), tmean.norm.std = scale(tmean.norm), year.std = scale(year), rad.tot.std = scale(rad.tot.std))
 
+
+# Quick check with lmer 
+m1 <- lmer(raw_width ~ ppt.z*tmean.z + ppt.z1*tmean.z1 + cluster + species + (1|tree.id) , data=d)
+summary(m1)
+
+# all main variables with raw ring widths
+m_raw <- lmer(raw_width ~ ppt.norm.std + tmean.norm.std + year.std + ppt.z + ppt.z1 + ppt.z2 + ppt.z3 + tmean.z + tmean.z1 + tmean.z2 + tmean.z3 + ppt.z*tmean.z + (1|tree.id) + (1|species) + (1+ppt.z|cluster), data=d)
+summary(m_raw)
+coef(m_raw)
+
+# all main variables with raw ring widths
+m_rwi <- lmer(rwi ~ ppt.norm.std + tmean.norm.std  + (1|cluster), data=d)
+summary(m_rwi)
 
 
