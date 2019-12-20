@@ -133,5 +133,25 @@ coef(m_raw)$cluster$ppt.z
 m_rwi <- lm(rwi ~ ppt.norm.std + tmean.norm.std + year.std + ppt.z*cluster + ppt.z1 + ppt.z2 + tmean.z + tmean.z1 , data=d)
 summary(m_rwi)
 
-############
-# 
+# check influence, if any, of local variation in tree growth rate on climate sensitivity
+m_rwi <- lm(rwi ~ ppt.norm.std + tmean.norm.std + ppt.z*tree.growth.z + tmean.z*tree_growth.z, data=d)
+options(scipen=1000)
+summary(m_rwi, digits=2)
+
+
+
+#######################
+#### Next steps: 
+#### 1) Figure out best (stiff spline?) detrending method 
+#### 2) Fit regressions to individual trees to explore how coeffieient variation is partitioned among plots and regions, and how well this variation can be explained by normal climate or other plot-level variables. 
+#### 3) Explore nonlinear response shapes for tree growth relation to precipitation
+#### 4) Refit individual tree regressions for the subset of dry years only, and the subset of wet/normal years only. Do climatic relationships within trees, and among plots, change a lot in wet vs dry years? 
+
+
+# Checking nonlinearity of growth response 
+library(gam)
+m_gam <- gam(rwi ~ ppt.norm.std + tmean.norm.std + s(ppt.z) + s(tmean.z), data=d[d$cluster=="SH",])
+plot(m_gam)
+# Across the board there seems a steeper sensitivity to ppt in drought -- in the ppt.z values more than 1 sd below average. In the north high sites ONLY, there's a clear flattening or even reversal of sensitivity at >1 sd above mean ppt. Potentially this is a snowpack effect? 
+# Temperature isn't that important, and the splines are all over the place. Hard to interpret. 
+
