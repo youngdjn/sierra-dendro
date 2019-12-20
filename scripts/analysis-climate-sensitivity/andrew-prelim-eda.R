@@ -1,11 +1,12 @@
 #### This script: ####
 # - loads compiled tree growth and climate data to explore what is there 
 # just starting here to get a handle on the data and its structure . . . 
-
+ 
 library(tidyverse)
 library(ggExtra)
 library(broom)
 library(lme4)
+library(fields)
 
 #### Load and merge data ####
 years <- read.csv("./data/compiled-for-analysis/years.csv")
@@ -23,8 +24,8 @@ years$growth <- years$raw_width # Choose growth metric to look at
 # Make a data matrix containing growth for trees on rows and years on columns
 n.trees <- nrow(trees)
 tree.ids <- sort(unique(trees$tree.id))
-n.years <- length(year.ids)
 year.ids <- sort(unique(years$year))
+n.years <- length(year.ids)
 growth_tree_by_year <- matrix(NA, n.trees, n.years)
 for (i in 1:n.trees) {
   z <- filter(years, tree.id==tree.ids[i])
@@ -33,6 +34,9 @@ for (i in 1:n.trees) {
     if (!is.null(zz)) growth_tree_by_year[i,j] <- zz else growth_tree_by_year[i,j] <- NA
   }
 }
+
+image.plot(growth_tree_by_year)
+
 # Turn into data frame with year labels on columns and tree labels on rows
 growth_tree_by_year <- as.data.frame(growth_tree_by_year)
 colnames(growth_tree_by_year) <- as.character(year.ids)
@@ -47,9 +51,10 @@ trees$AR1 <- trees_AR1
 ggplot(trees) + geom_histogram(aes(AR1)) + facet_wrap(~species) + theme_bw() + removeGrid()
 # And by cluster 
 ggplot(trees) + geom_histogram(aes(AR1)) + facet_wrap(~cluster) + theme_bw() + removeGrid()
+
 # Scatterplot vs elevation
 plot(AR1~elev, trees) # almost all the variation is within site
-summary(lm(AR1~species+cluster, trees)) # stronger autocorrelation in the low-elevation clusters
+summary(lm(AR1~species+cluster, trees)) # slightly stronger autocorrelation in the low-elevation clusters
 
 # Using tree.id, merge tree-level info (species, plot.id, dbh, elev, cluster, voronoi.area) into yearly increment data set
 d_long <- merge(years, trees[,c("tree.id", "species", "plot.id", "x", "y", "elev", "cluster", "voronoi.area", "radius", "radius.external", "AR1")], by="tree.id", )
@@ -85,37 +90,48 @@ hist(trend_coefs) # leans negative, but not by much
 tree_augmented <- do(by_tree, augment(lm(raw_width~year, .)))
 ggplot(tree_augmented, aes(year, .resid)) + geom_line(aes(group = tree.id), alpha = 1 / 3) +  geom_smooth(se = FALSE)
 
-# Note >100 trees seem to be missing density info (voronoi.area)
-sum(is.na(trees$voronoi.area))
-
 ## Subset data for analysis. 
-d <- filter(d_long, year > 1964) # keep last 50 years
+# Check length of each tree record
 tree_record_length_table <- table(d_long$tree.id[!is.na(d_long$raw_width)])
 hist(tree_record_length_table, main="Histogram of tree-ring record lengths")
 min_record_length <- 30 # drop trees with shorter record than this number of years
+
+# Assemble data
 d <- filter(d_long, tree.id %in% names(tree_record_length_table)[tree_record_length_table >= min_record_length])
+dim(d)
+length(unique(d$tree.id))
+d <- filter(d, year > 1961) # keep last 53 years (50 plus 3 lags)
+d <- filter(d, species == "PSME") # keep just one species
+#d <- filter(d, species %in% c("ABCO", "PIPO", "PSME")) # keep the 3 common species
 dim(d)
 length(unique(d$tree.id))
 
 # Keep only the necessary columns
-d <- select(d, cluster, plot.id, tree.id, species, year, rwi, raw_width, voronoi.area, radius.external, ppt.norm, tmean.norm, rad.tot, starts_with("ppt.z"), starts_with("tmean.z"))
+d <- dplyr::select(d, cluster, plot.id, tree.id, species, year, rwi, raw_width, voronoi.area, radius.external, ppt.norm, tmean.norm, rad.tot, starts_with("ppt.z"), starts_with("tmean.z"))
 head(d)
 
-# Center and scale unstandardized columns 
-d <- mutate(d, ppt.norm.std = scale(ppt.norm), tmean.norm.std = scale(tmean.norm), year.std = scale(year), rad.tot.std = scale(rad.tot.std))
 
+# Center and scale unstandardized columns 
+d <- mutate(d, ppt.norm.std = scale(ppt.norm), tmean.norm.std = scale(tmean.norm), year.std = scale(year), rad.tot.std = scale(rad.tot), voronoi.area.std = scale(voronoi.area))
+
+# Create a new variable that represents "within-plot long-term growth rate z-score": how much faster or slower does each tree grow than the average for its plot? 
+d$plot_mean_rw <- with(d, ave(raw_width, plot.id, FUN=function(x) mean(x, na.rm=T)))
+d$tree_mean_rw <- with(d, ave(raw_width, tree.id, FUN=function(x) mean(x, na.rm=T)))
+d$plot_sd_rw <- with(d, ave(tree_mean_rw, plot.id, FUN=function(x) sd(x, na.rm=T)))
+d <- mutate(d, tree.growth.z = (tree_mean_rw - plot_mean_rw)/plot_sd_rw)
 
 # Quick check with lmer 
-m1 <- lmer(raw_width ~ ppt.z*tmean.z + ppt.z1*tmean.z1 + cluster + species + (1|tree.id) , data=d)
+m1 <- lmer(raw_width ~ ppt.z*tmean.z + ppt.z1*tmean.z1 + cluster + (1|tree.id) , data=d)
 summary(m1)
 
 # all main variables with raw ring widths
-m_raw <- lmer(raw_width ~ ppt.norm.std + tmean.norm.std + year.std + ppt.z + ppt.z1 + ppt.z2 + ppt.z3 + tmean.z + tmean.z1 + tmean.z2 + tmean.z3 + ppt.z*tmean.z + (1|tree.id) + (1|species) + (1+ppt.z|cluster), data=d)
+m_raw <- lmer(raw_width ~ ppt.norm.std + tmean.norm.std  + year.std + ppt.z + ppt.z1 + ppt.z2 + ppt.z3 + tmean.z + tmean.z1 + tmean.z2 + tmean.z3 + ppt.z*tmean.z + (1|tree.id)  + (1+ppt.z|cluster), data=d)
 summary(m_raw)
-coef(m_raw)
+coef(m_raw)$cluster$ppt.z
 
-# all main variables with raw ring widths
-m_rwi <- lmer(rwi ~ ppt.norm.std + tmean.norm.std  + (1|cluster), data=d)
+# all main variables with ring width index
+m_rwi <- lm(rwi ~ ppt.norm.std + tmean.norm.std + year.std + ppt.z*cluster + ppt.z1 + ppt.z2 + tmean.z + tmean.z1 , data=d)
 summary(m_rwi)
 
-
+############
+# 
