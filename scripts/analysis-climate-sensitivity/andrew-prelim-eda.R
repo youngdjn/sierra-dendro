@@ -35,7 +35,18 @@ for (i in 1:n.trees) {
   }
 }
 
+# Visualize whole data matrix
 image.plot(growth_tree_by_year)
+
+
+
+# Write these data in form readable by dplr as a rwl object: 
+dat <- as.data.frame(t(growth_tree_by_year))
+colnames(dat) <- tree.ids
+rownames(dat) <- year.ids
+write.csv(dat, "tree_rings_out.csv")
+
+
 
 # Turn into data frame with year labels on columns and tree labels on rows
 growth_tree_by_year <- as.data.frame(growth_tree_by_year)
@@ -153,9 +164,12 @@ m_rwi <- lm(rwi ~ ppt.norm.std + tmean.norm.std + ppt.z*tree.growth.z + tmean.z*
 
 
 # Checking nonlinearity of growth response 
+
+# At the cluster level -- this combines responses across trees and sites within a cluster. So nonlinearity may or may not be present within individual trees.
 library(gam)
 m_gam <- gam(rwi ~ ppt.norm.std + tmean.norm.std + s(ppt.z) + s(tmean.z), data=d[d$cluster=="NH",])
 plot(m_gam)
 # Across the board there seems a steeper sensitivity to ppt in drought -- in the ppt.z values more than 1 sd below average. In the north high sites ONLY, there's a clear flattening or even reversal of sensitivity at >1 sd above mean ppt. Potentially this is a snowpack effect? 
 # Temperature isn't that important, and the splines are all over the place. Hard to interpret. 
 
+# At the plot level within the "NH" cluster -- this combines responses across trees and sites within a cluster. So nonlinearity may or may not be present within individual trees.
