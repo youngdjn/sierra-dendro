@@ -44,7 +44,7 @@ image.plot(growth_tree_by_year)
 dat <- as.data.frame(t(growth_tree_by_year))
 colnames(dat) <- tree.ids
 rownames(dat) <- year.ids
-write.csv(dat, "tree_rings_out.csv")
+write.csv(dat, "./working-data/tree_rings_out.csv")
 
 
 
