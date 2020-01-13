@@ -2,6 +2,7 @@
 # - loads compiled tree growth and climate data to explore what is there 
 # just starting here to get a handle on the data and its structure . . . 
  
+
 library(tidyverse)
 library(ggExtra)
 library(broom)
@@ -83,9 +84,25 @@ head(d_long)
 # What subset of data to use -- should we look only at trees with a record going back a certain number of years? How far back should we look? For consistency, should we look no further back than a few decades?  Keep all species? 
 # Proposal: for now, keep all trees, do analyses on the past 50 years (1965-2014) but check for conflation of patterns with age of tree and length of record. 
 
+# For now, look only at the common 3 species: 
+d_long <- filter(d_long, species %in% c("ABCO", "PIPO", "PSME"))
+
 # How many trees have ring widths available for each year?
 table(d_long$year[!is.na(d_long$raw_width)])
-plot(table(d_long$year[!is.na(d_long$raw_width)]), type="l", ylab="Number of trees")
+#plot(table(d_long$year[!is.na(d_long$raw_width)]), type="l", ylab="Number of trees")
+# By cluster: 
+plot(table(d_long$year[!is.na(d_long$raw_width) & d_long$cluster.x == "SL"]), type="l", col="orange", ylab="Number of trees")
+lines(table(d_long$year[!is.na(d_long$raw_width) & d_long$cluster.x == "NH"]), type="l", col="blue")
+lines(table(d_long$year[!is.na(d_long$raw_width) & d_long$cluster.x == "NL"]), type="l", col="cyan")
+lines(table(d_long$year[!is.na(d_long$raw_width) & d_long$cluster.x == "SH"]), type="l", col="red")
+
+# By species
+plot(table(d_long$year[!is.na(d_long$raw_width) & d_long$species == "PSME"]), type="l", col="darkgreen", ylab="Number of trees")
+lines(table(d_long$year[!is.na(d_long$raw_width) & d_long$species == "PIPO"]), type="l", col="orange")
+lines(table(d_long$year[!is.na(d_long$raw_width) & d_long$species == "ABCO"]), type="l", col="blue")
+#lines(c(1975,1975), c(0, 500))
+legend("topleft", c("PSME", "PIPO", "ABCO"), col=c("darkgreen", "orange", "blue"), lwd=rep(3, 3), cex=0.75)
+
 
 # What's the distribution of length of records across trees? 
 hist(table(d_long$tree.id[!is.na(d_long$raw_width)]))
