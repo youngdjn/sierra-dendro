@@ -4,6 +4,8 @@
 
 library(dplyr)
 library(ggplot2)
+library(brms)
+library(rstan)
 
 #### Load and merge data ####
 years <- read.csv("./data/compiled-for-analysis/years.csv")
@@ -60,10 +62,12 @@ head(d)
 #rwi_mat <- as.matrix(select(rwi_wide, -tree.id))
 #rwi_wide_lag1 <- as.data.frame(t(apply(rwi_mat, 1, lag)))
 #rwi_wide_lag1$tree.id <- rwi_wide$tree.id
-#rwi_long_lag1 <- reshape(rwi_wide_lag1, direction="long", idvar="tree.id", timevar="year", varying=list(1:ncol(rwi_mat)), sep=".")
+#rwi_long_lag1 <- reshape(rwi_wide_lag1, direction="long", idvar="tree.id", timevar="year", varying=list(1:ncol(rwi_mat)), sep=".") # Broken -- doesn't preserve year
 
 # Center and scale unstandardized columns 
 d <- mutate(d, ppt.norm.std = scale(ppt.norm), tmean.norm.std = scale(tmean.norm), year.std = scale(year), rad.tot.std = scale(rad.tot), voronoi.area.std = scale(voronoi.area))
 
+
 #### Specify model ####
+
 
