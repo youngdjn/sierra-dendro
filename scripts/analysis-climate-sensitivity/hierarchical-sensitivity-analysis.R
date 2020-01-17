@@ -44,7 +44,7 @@ length(unique(d$tree.id))
 
 #### Set up data for analysis #### 
 
-#d <- read.csv("./working-data/tree-ring-data-long.csv")
+d <- read.csv("./working-data/tree-ring-data-long.csv")
 
 # Keep only the necessary columns
 d <- dplyr::select(d, cluster.x, cluster.y, plot.id, tree.id, species, year, rwi, raw_width, ba, bai, voronoi.area, radius.external, ppt.norm, tmean.norm, rad.tot, starts_with("ppt.z"), starts_with("tmean.z"))
@@ -70,4 +70,15 @@ d <- mutate(d, ppt.norm.std = scale(ppt.norm), tmean.norm.std = scale(tmean.norm
 
 #### Specify model ####
 
+# Simplest model at tree level has one one weather variable (ppt.z) and its short-term lag (ppt.z1), one autoregressive term (lag(growth, 1)). 
+# Simplest model at plot level -- explaining variation in mean growth, and in sensitivity of growth to precipitation, among plots, using long-term normal precipitation. 
 
+mod.form <- brmsformula(rwi ~ ppt.z*ppt.norm.std + ppt.z1 + lag(rwi, 1) + (1 + lag(rwi, 1)| plot.id))
+
+brms.data <- dplyr::filter(d, species=="PSME")
+
+prior <- c(set_prior("normal(0, 2)", class = "Intercept", coef = ""), set_prior("normal(0, 2)", class = "b", coef = ""), set_prior("cauchy(0, 10)", class = "sd", coef = ""))
+
+m0 <- brm(mod.form, data=brms.data, prior=prior, family=gaussian(), chains=3, cores=3, iter=100)
+
+summary(m0)
