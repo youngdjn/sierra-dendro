@@ -3,6 +3,7 @@
 # 2) filters the data based on species, year, and number of data points per tree; 
 
 library(dplyr)
+library(readr)
 library(ggplot2)
 library(brms)
 library(rstan)
@@ -68,16 +69,37 @@ head(d)
 d <- mutate(d, ppt.norm.std = scale(ppt.norm), tmean.norm.std = scale(tmean.norm), year.std = scale(year), rad.tot.std = scale(rad.tot), voronoi.area.std = scale(voronoi.area))
 
 
+#### Test run a mixed model on the data in stan 
+
+model.path <- ("./scripts/analysis-climate-sensitivity/lmm_random_slopes.stan")
+d_psme <- dplyr::filter(d, species=="PSME")
+d_psme <- d_psme[!is.na(d_psme$rwi) & !is.na(d_psme$ppt.z),]
+d_psme$plot_index <- match(d_psme$plot.id, unique(d_psme$plot.id))
+d_psme_plot <- summarise(group_by(d_psme, plot.id), raw_width_mean = mean(raw_width, na.rm=T), ppt.norm = mean(ppt.norm, na.rm=T))
+  
+d_psme$plot_index <- match(d_psme$plot.id, unique(d_psme$plot.id))
+stan.data <- list(N=nrow(d_psme), N_groups = max(d_psme$plot_index), y = d_psme$rwi, x = d_psme$ppt.z, group_index = d_psme$plot_index)
+
+m <- stan(file=model.path, data=stan.data)
+
+
+
+
 #### Specify model ####
 
 # Simplest model at tree level has one one weather variable (ppt.z) and its short-term lag (ppt.z1), one autoregressive term (lag(growth, 1)). 
 # Simplest model at plot level -- explaining variation in mean growth, and in sensitivity of growth to precipitation, among plots, using long-term normal precipitation. 
 
+
+
+
+
+
 mod.form <- brmsformula(rwi ~ ppt.z*ppt.norm.std + ppt.z1 + lag(rwi, 1) + (1 + lag(rwi, 1)| plot.id))
 
 brms.data <- dplyr::filter(d, species=="PSME")
 
-prior <- c(set_prior("normal(0, 2)", class = "Intercept", coef = ""), set_prior("normal(0, 2)", class = "b", coef = ""), set_prior("cauchy(0, 10)", class = "sd", coef = ""))
+prior <- c(set_prior("normal(0, 2)", class = "Intercept", coef = ""), set_prior("normal(0, 2)", class = "b", coef = ""), set_prior("cauchy(0, 2)", class = "sd", coef = ""))
 
 m0 <- brm(mod.form, data=brms.data, prior=prior, family=gaussian(), chains=3, cores=3, iter=100)
 
