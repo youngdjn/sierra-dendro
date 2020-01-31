@@ -18,9 +18,9 @@ parameters {
 model {
   mu_a ~ normal(0, 2); // priors
   mu_b ~ normal(0, 2);
-  sigma_y ~ gamma(2, 0.5); //normal(0,2) T[0,]; 
-  sigma_a ~ gamma(2, 0.5); // normal(0,2) T[0,]; 
-  sigma_b ~ gamma(2, 0.5); // normal(0,2) T[0,]; 
+  sigma_y ~ normal(0,2) T[0,]; 
+  sigma_a ~ normal(0,2) T[0,]; 
+  sigma_b ~ normal(0,2) T[0,]; // gamma(2, 0.5); 
   for (n in 1:N_groups)
 	a[n] ~ normal(mu_a, sigma_a);
   for (n in 1:N_groups)
