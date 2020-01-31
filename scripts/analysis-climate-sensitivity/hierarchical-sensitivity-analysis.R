@@ -164,7 +164,9 @@ ggplot(d, aes(ppt, raw_width, color=cluster.y))  + theme_bw() + geom_smooth(meth
 # quadratic
 ggplot(d[d$cluster.y=="Sierra",], aes(ppt, rwi, group=tree.id)) + facet_wrap(~plot.id, nrow=3)   + theme_bw()  +  theme(legend.position="none")+ geom_smooth(method=lm, formula = y~poly(x, 2), se=FALSE, fullrange=FALSE) 
 # loess
-ggplot(d[d$cluster.y=="Sierra",], aes(ppt, rwi, group=tree.id, color=year)) + facet_wrap(~plot.id, nrow=3)   + theme_bw()  +  theme(legend.position="none")+ geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + geom_point(cex=0.5) + scale_color_gradient2(midpoint=mean(d$year, na.rm=T), low="blue", mid="white", high="red", space ="Lab" )
+ggplot(d[d$cluster.y=="Sierra",], aes(ppt.z, rwi, group=tree.id, color=tree.id)) + facet_wrap(~plot.id, nrow=3)   + theme_bw()  +  theme(legend.position="none")+ geom_smooth(method=loess, se=FALSE, fullrange=FALSE) #+ geom_point(cex=0.5) + scale_color_gradient2(midpoint=mean(d$year, na.rm=T), low="blue", mid="white", high="red", space ="Lab" )
+#linear
+ggplot(d[d$cluster.y=="Sierra",], aes(ppt.z, rwi, group=tree.id, color=tree.id)) + facet_wrap(~plot.id, nrow=3)   + theme_bw()  +  theme(legend.position="none")+ geom_smooth(method=lm, se=FALSE, fullrange=FALSE)
 # Interesting consistency here is apparent breakpoint for a lot of trees and plots around 1000 mm precip or a bit less, with some trees showing a second acceleration at high end -- this appears to be real, not driven by a single high-leverage year. Further, if we color the points by year, this reveals excellent interspersion of ppt and decade; this is a longer-term pattern not driven by an extreme. Quite interesting - what accounts for the kink in some plots but not others? Are there differences in snowpack? 
 
 # Does the pattern look qualitatively similar if we look at raw growth rates? 
@@ -175,21 +177,21 @@ ggplot(d[d$cluster.y=="Sierra",], aes(ppt, raw_width, group=tree.id, color=year)
 # quadratic
 ggplot(d[d$cluster.y=="Yose",], aes(ppt, rwi, group=tree.id)) + facet_wrap(~plot.id, nrow=3)   + theme_bw()  +  theme(legend.position="none")+ geom_smooth(method=lm, formula = y~poly(x, 2), se=FALSE, fullrange=FALSE)
 # loess
-ggplot(d[d$cluster.y=="Yose",], aes(ppt, rwi, group=tree.id, color=year)) + facet_wrap(~plot.id, nrow=3)   + theme_bw()  +  theme(legend.position="none")+ geom_smooth(method=loess, se=FALSE, fullrange=FALSE) #+ geom_point(cex=0.5) + scale_color_gradient2(midpoint=mean(d$year, na.rm=T), low="blue", mid="white", high="red", space ="Lab" )
+ggplot(d[d$cluster.y=="Yose",], aes(ppt, rwi, group=tree.id, color=tree.id)) + facet_wrap(~plot.id, nrow=3)   + theme_bw()  +  theme(legend.position="none")+ geom_smooth(method=loess, se=FALSE, fullrange=FALSE) #+ geom_point(cex=0.5) + scale_color_gradient2(midpoint=mean(d$year, na.rm=T), low="blue", mid="white", high="red", space ="Lab" )
 # Differences from Sierra: switchpoint seems slightly higher, like 1200 mm for most trees and plots. Consistent with local adaptation hypothesis, but could also reflect covariance of ppt and temperature, and/or snowpack? 
 
 # Tahoe
 # quadratic
 ggplot(d[d$cluster.y=="Tahoe",], aes(ppt, rwi, group=tree.id)) + facet_wrap(~plot.id, nrow=3)   + theme_bw()  +  theme(legend.position="none")+ geom_smooth(method=lm, formula = y~poly(x, 2), se=FALSE, fullrange=FALSE)
 # loess
-ggplot(d[d$cluster.y=="Tahoe",], aes(ppt, rwi, group=tree.id, color=year)) + facet_wrap(~plot.id, nrow=3)   + theme_bw()  +  theme(legend.position="none")+ geom_smooth(method=loess, se=FALSE, fullrange=FALSE) #+ geom_point(cex=0.5) + scale_color_gradient2(midpoint=mean(d$year, na.rm=T), low="blue", mid="white", high="red", space ="Lab" )
+ggplot(d[d$cluster.y=="Tahoe",], aes(ppt, rwi, group=tree.id, color=tree.id)) + facet_wrap(~plot.id, nrow=3)   + theme_bw()  +  theme(legend.position="none")+ geom_smooth(method=loess, se=FALSE, fullrange=FALSE) #+ geom_point(cex=0.5) + scale_color_gradient2(midpoint=mean(d$year, na.rm=T), low="blue", mid="white", high="red", space ="Lab" )
 # Quite heterogeneous among plots, but fairly consistent among trees within plots. I think this supports that we can legitimately model a plot-level response shape. Hard to make any generalizations otherwise in this cluster, though linear and saturating responses seem to predominate, with downward slopes at highest precip for many plots. 
 
 # Plumas
 # quadratic
 ggplot(d[d$cluster.y=="Plumas",], aes(ppt, rwi, group=tree.id)) + facet_wrap(~plot.id, nrow=3)   + theme_bw()  +  theme(legend.position="none")+ geom_smooth(method=lm, formula = y~poly(x, 2), se=FALSE, fullrange=FALSE)
 # loess
-ggplot(d[d$cluster.y=="Plumas",], aes(ppt, rwi, group=tree.id, color=year)) + facet_wrap(~plot.id, nrow=3)   + theme_bw()  +  theme(legend.position="none")+ geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + geom_point(cex=0.5) + scale_color_gradient2(midpoint=mean(d$year, na.rm=T), low="blue", mid="white", high="red", space ="Lab" )
+ggplot(d[d$cluster.y=="Plumas",], aes(ppt, rwi, group=tree.id, color=tree.id)) + facet_wrap(~plot.id, nrow=3)   + theme_bw()  +  theme(legend.position="none")+ geom_smooth(method=loess, se=FALSE, fullrange=FALSE) #+ geom_point(cex=0.5)+ scale_color_gradient2(midpoint=mean(d$year, na.rm=T), low="blue", mid="white", high="red", space ="Lab" )
 # Most linear and least sensitive region. But note, below 1000 mm they show sharp decline, like trees in other regions. This drought sensitivity signal is driven by 3 years early on in the record, and results in an inital regression breakpoint or saturation around 1200-1400mm (hard to tell by eye). There is not a consistent decline in RWI above 3000 mm, maybe because these wet plots are warmer than those of similar precip in the Tahoe area? Probably a snowpack effect, or growing degree days, or both ?
 
 
@@ -213,4 +215,9 @@ ggplot(d, aes(ppt, rwi, color=cluster.x))    + theme_bw()  + geom_smooth(method=
 
 # compare to ppt z scores (local anomaly)
 ggplot(d, aes(ppt.z, rwi, color=cluster.x))    + theme_bw()  + geom_smooth(method=loess, se=T, fullrange=FALSE) 
+ggplot(d, aes(ppt.z, rwi, color=cluster.x))    + theme_bw()  + geom_smooth(method=lm, formula = y~poly(x, 1), se=T, fullrange=FALSE) 
 # Steeper slope relative to local variation in lower-elevation plots. NL and SL are very similar, nearly identical. NH is lease sensitive, and even shows decline at high z-scores; SH is intermediate. Could this suggest that sensitivity increases to the same degree at the range limit in the south, as at the elevational local range limits? And further that adapation is not enough to buffer the response to drier extremes? 
+
+# Conclusion on linearity for the purposes of model structure. We should not model the response shape as linear. It's not, even at the level of individual trees, ALTHOUGH sometimes it is -- apparently in low-elevation, wet sites where precipitation is less limiting and there is also little snowpack. But linearity at the tree level is the exception. To generalize and over-simplify, for most trees, there is a breakpoint below which sensitivity increases. Below this point, generally we don't have enough data to determine if this decline is accelerating, and mostly it seems like it could be reasonable to represent it as linear. Above this breakpoint is a shallower slope that's also possibly linear. In many trees, especially in higher-rainfall areas, but really in all the clusters, there's a second breakpoint beyond which the response of growth to ppt either re-accelerates, or alternatively becomes negative. The negative trend is most prevalent in Tahoe, though you also see it in Plumas. My guess is that this negative trend at high precipitation will be primarily in higher-elevation or colder sites, and is driven by snowpack. 
+
+# Alternative modeling methods: a) piecewise linear with a breakpoint; b) quadradic; c) basis spline. I don't know how to do any of these in a hierarchical way but the piecewise linear and quadratic should be not too complicated. 
