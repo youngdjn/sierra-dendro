@@ -104,6 +104,35 @@ prior <- c(set_prior("normal(0, 2)", class = "Intercept", coef = ""), set_prior(
 
 m0 <- brm(mod.form, data=brms.data, prior=prior, family=gaussian(), chains=3, cores=3, iter=1000)
 
-summary(m0)
+# Try fitting simple changepoint model in brms
+# This is based on code by Paul Buerkner at https://discourse.mc-stan.org/t/piecewise-linear-mixed-models-with-a-random-change-point/5306 
 
+bform <- bf(
+  rwi ~ b0 + b1 * (ppt.z - alpha) * step(alpha - ppt.z) + 
+    b2 * (ppt.z - alpha) * step(ppt.z - alpha) + b3 * ppt.z1, 
+  b0 + b1 + b2 + b3 + alpha ~ 1 + (1|plot.id/tree.id),
+  # to keep omega within the age range of 600 and 1400
+  #nlf(omega ~ inv_logit(alpha) * 2 - 1),
+  nl = TRUE
+)
+
+df <- filter(d_psme, cluster.y == "Plumas")
+
+bprior <- prior(normal(0, 3), nlpar = "b0") +
+  prior(normal(0, 3), nlpar = "b1") +
+  prior(normal(0, 3), nlpar = "b2") +
+  prior(normal(0, 3), nlpar = "b3") +
+  #prior(normal(0, 3), nlpar = "b4") +
+  #prior(normal(0, 3), nlpar = "b5") +
+  prior(normal(0, 0.2), nlpar = "alpha")
+
+make_stancode(bform, data = df, prior = bprior)
+
+fit <- brm(bform, data = df, prior = bprior, chains = 3, iter=1000)
+summary(fit)
+
+# you need the github version of brms for this to run
+marginal_effects(fit)
+
+ranef(fit)
 
