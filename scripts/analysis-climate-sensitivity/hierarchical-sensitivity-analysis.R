@@ -78,21 +78,21 @@ d <- mutate(d, ppt.std = scale(ppt), ppt.norm.std = scale(ppt.norm), tmean.norm.
 #### Test run a mixed model on the data in stan 
 
 # Set up data for stan
-d_psme <- dplyr::filter(d, species=="PSME")
-d_psme <- d_psme[!is.na(d_psme$rwi) & !is.na(d_psme$ppt.z),]
-d_psme$plot_index <- match(d_psme$plot.id, unique(d_psme$plot.id))
-d_psme_plot <- summarise(group_by(d_psme, plot.id), raw_width_mean = mean(raw_width, na.rm=T), ppt.norm = mean(ppt.norm, na.rm=T), ppt.norm.std = mean(ppt.norm.std, na.rm=T))
-  
-d_psme$plot_index <- match(d_psme$plot.id, unique(d_psme$plot.id))
+d_test <- dplyr::filter(d, species=="PSME")
+d_test <- d_test[!is.na(d_test$rwi) & !is.na(d_test$ppt.z),]
 
-d_psme_test <- filter(d_psme, cluster.y == "Sierra")
+# Subsample data to speed up testing 
+d_test <- filter(d_test, cluster.y == "Yose")
+d_test$plot_index <- match(d_test$plot.id, unique(d_test$plot.id))
+d_plot_test <- summarise(group_by(d_test, plot.id), cluster.y = first(cluster.y), raw_width_mean = mean(raw_width, na.rm=T), ppt.norm = mean(ppt.norm, na.rm=T), ppt.norm.std = mean(ppt.norm.std, na.rm=T))
+d_plot_test
 
-stan.data <- list(N=nrow(d_psme_test), N_groups = max(d_psme_test$plot_index), y = d_psme_test$rwi, x = d_psme_test$ppt.z, x_group = d_psme_plot$ppt.norm.std, group_index = d_psme_test$plot_index)
+stan.data <- list(N=nrow(d_test), N_groups = max(d_test$plot_index), y = d_test$rwi, x = d_test$ppt.z, x_group = d_plot_test$ppt.norm.std, group_index = d_test$plot_index)
 
 # Run model 
 
 model.path <- ("./scripts/analysis-climate-sensitivity/lmm_random_slopes_2_level.stan")
-m <- stan(file=model.path, data=stan.data)
+m <- stan(file=model.path, data=stan.data, iter=1000)
 
 # Check results
 print(m)
