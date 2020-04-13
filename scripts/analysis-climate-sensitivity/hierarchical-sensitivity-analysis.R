@@ -70,28 +70,39 @@ head(d)
 #rwi_long_lag1 <- reshape(rwi_wide_lag1, direction="long", idvar="tree.id", timevar="year", varying=list(1:ncol(rwi_mat)), sep=".") # Broken -- doesn't preserve year
 
 # Center and scale unstandardized columns 
-d <- mutate(d, ppt.norm.std = scale(ppt.norm), tmean.norm.std = scale(tmean.norm), year.std = scale(year), rad.tot.std = scale(rad.tot), voronoi.area.std = scale(voronoi.area))
+d <- mutate(d, ppt.std = scale(ppt), ppt.norm.std = scale(ppt.norm), tmean.norm.std = scale(tmean.norm), year.std = scale(year), rad.tot.std = scale(rad.tot), voronoi.area.std = scale(voronoi.area))
 
 
 
 
 #### Test run a mixed model on the data in stan 
 
-model.path <- ("./scripts/analysis-climate-sensitivity/lmm_random_slopes.stan")
+# Set up data for stan
 d_psme <- dplyr::filter(d, species=="PSME")
 d_psme <- d_psme[!is.na(d_psme$rwi) & !is.na(d_psme$ppt.z),]
 d_psme$plot_index <- match(d_psme$plot.id, unique(d_psme$plot.id))
-d_psme_plot <- summarise(group_by(d_psme, plot.id), raw_width_mean = mean(raw_width, na.rm=T), ppt.norm = mean(ppt.norm, na.rm=T))
+d_psme_plot <- summarise(group_by(d_psme, plot.id), raw_width_mean = mean(raw_width, na.rm=T), ppt.norm = mean(ppt.norm, na.rm=T), ppt.norm.std = mean(ppt.norm.std, na.rm=T))
   
 d_psme$plot_index <- match(d_psme$plot.id, unique(d_psme$plot.id))
-stan.data <- list(N=nrow(d_psme), N_groups = max(d_psme$plot_index), y = d_psme$rwi, x = d_psme$ppt.z, group_index = d_psme$plot_index)
 
+d_psme_test <- filter(d_psme, cluster.y == "Sierra")
+
+stan.data <- list(N=nrow(d_psme_test), N_groups = max(d_psme_test$plot_index), y = d_psme_test$rwi, x = d_psme_test$ppt.z, x_group = d_psme_plot$ppt.norm.std, group_index = d_psme_test$plot_index)
+
+# Run model 
+
+model.path <- ("./scripts/analysis-climate-sensitivity/lmm_random_slopes_2_level.stan")
 m <- stan(file=model.path, data=stan.data)
+
+# Check results
 print(m)
 check_hmc_diagnostics(m)
-stan_dens(m, pars = c("sigma_y", "sigma_a", "sigma_b")
+stan_dens(m, pars = c("mu_a", "mu_b", "sigma_y", "sigma_a", "sigma_b"))
 
-#### Specify random slope model in model ####
+          
+#### Specify random slope model ####
+
+
 
 # Simplest model at tree level has one one weather variable (ppt.z) and its short-term lag (ppt.z1), one autoregressive term (lag(growth, 1)). 
 # Simplest model at plot level -- allowing sensitivity of growth to precipitation to vary among plots (random slopes). 
@@ -108,15 +119,15 @@ m0 <- brm(mod.form, data=brms.data, prior=prior, family=gaussian(), chains=3, co
 # This is based on code by Paul Buerkner at https://discourse.mc-stan.org/t/piecewise-linear-mixed-models-with-a-random-change-point/5306 
 
 bform <- bf(
-  rwi ~ b0 + b1 * (ppt.z - alpha) * step(alpha - ppt.z) + 
-    b2 * (ppt.z - alpha) * step(ppt.z - alpha) + b3 * ppt.z1, 
-  b0 + b1 + b2 + b3 + alpha ~ 1 + (1|plot.id/tree.id),
+  rwi ~ b0 + b1 * ppt.z * step(alpha - ppt.z) + 
+    b2 * ppt.z * step(ppt.z - alpha) + b3 * ppt.z1, 
+  b0 + b1 + b2 + b3 + alpha ~ 1 + (1|plot.id/tree.id), #(1|cluster.y/plot.id)
   # to keep omega within the age range of 600 and 1400
   #nlf(omega ~ inv_logit(alpha) * 2 - 1),
   nl = TRUE
 )
 
-df <- filter(d_psme, cluster.y == "Plumas")
+df <- filter(d_psme, cluster.y == "Sierra")
 
 bprior <- prior(normal(0, 3), nlpar = "b0") +
   prior(normal(0, 3), nlpar = "b1") +
@@ -124,15 +135,16 @@ bprior <- prior(normal(0, 3), nlpar = "b0") +
   prior(normal(0, 3), nlpar = "b3") +
   #prior(normal(0, 3), nlpar = "b4") +
   #prior(normal(0, 3), nlpar = "b5") +
-  prior(normal(0, 0.2), nlpar = "alpha")
+  prior(normal(0, 0.5), nlpar = "alpha")
 
 make_stancode(bform, data = df, prior = bprior)
 
-fit <- brm(bform, data = df, prior = bprior, chains = 3, iter=1000)
+fit <- brm(bform, data = df, prior = bprior, chains = 3, iter=500)
 summary(fit)
 
 # you need the github version of brms for this to run
 marginal_effects(fit)
+
 
 ranef(fit)
 
