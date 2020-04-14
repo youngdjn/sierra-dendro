@@ -82,10 +82,11 @@ d_test <- dplyr::filter(d, species=="PSME")
 d_test <- d_test[!is.na(d_test$rwi) & !is.na(d_test$ppt.z),]
 
 # Subsample data to speed up testing 
-#d_test <- filter(d_test, cluster.y != "Plumas" )
+d_test <- filter(d_test, cluster.y == "Yose" |  cluster.y == "Sierra")
 d_test$plot_index <- match(d_test$plot.id, unique(d_test$plot.id))
 d_plot_test <- summarise(group_by(d_test, plot.id), cluster.y = first(cluster.y), raw_width_mean = mean(raw_width, na.rm=T), ppt.norm = mean(ppt.norm, na.rm=T), ppt.norm.std = mean(ppt.norm.std, na.rm=T))
 d_plot_test
+
 
 stan.data <- list(N=nrow(d_test), N_groups = max(d_test$plot_index), y = d_test$rwi, x = d_test$ppt.z, x_group = d_plot_test$ppt.norm.std, group_index = d_test$plot_index)
 
@@ -98,6 +99,14 @@ m <- stan(file=model.path, data=stan.data, iter=1000, chains=4)
 print(m)
 check_hmc_diagnostics(m)
 stan_dens(m, pars = c("mu_a", "mu_b", "b_group","sigma_y", "sigma_a", "sigma_b"))
+
+# Works ok for the 2 southern clusters, not the 2 northern ones. Not sure why... 
+
+# Next steps: 
+# - perhaps add a level of nesting for cluster
+# - add lag1 rwi and ppt.z1 as explanatory variables
+# - implement change point regression for ppt.z, with ppt.norm as explanatory variable for the slopes and change point (maybe implement the 3 changepoint variables as a multivariate normal)
+
 
           
 #### Specify random slope model ####
