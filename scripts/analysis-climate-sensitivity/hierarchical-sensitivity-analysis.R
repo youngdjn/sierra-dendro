@@ -82,7 +82,7 @@ d_test <- dplyr::filter(d, species=="PSME")
 d_test <- d_test[!is.na(d_test$rwi) & !is.na(d_test$ppt.z),]
 
 # Subsample data to speed up testing 
-d_test <- filter(d_test, cluster.y == "Yose")
+#d_test <- filter(d_test, cluster.y != "Plumas" )
 d_test$plot_index <- match(d_test$plot.id, unique(d_test$plot.id))
 d_plot_test <- summarise(group_by(d_test, plot.id), cluster.y = first(cluster.y), raw_width_mean = mean(raw_width, na.rm=T), ppt.norm = mean(ppt.norm, na.rm=T), ppt.norm.std = mean(ppt.norm.std, na.rm=T))
 d_plot_test
@@ -92,12 +92,12 @@ stan.data <- list(N=nrow(d_test), N_groups = max(d_test$plot_index), y = d_test$
 # Run model 
 
 model.path <- ("./scripts/analysis-climate-sensitivity/lmm_random_slopes_2_level.stan")
-m <- stan(file=model.path, data=stan.data, iter=1000)
+m <- stan(file=model.path, data=stan.data, iter=1000, chains=4)
 
 # Check results
 print(m)
 check_hmc_diagnostics(m)
-stan_dens(m, pars = c("mu_a", "mu_b", "sigma_y", "sigma_a", "sigma_b"))
+stan_dens(m, pars = c("mu_a", "mu_b", "b_group","sigma_y", "sigma_a", "sigma_b"))
 
           
 #### Specify random slope model ####
