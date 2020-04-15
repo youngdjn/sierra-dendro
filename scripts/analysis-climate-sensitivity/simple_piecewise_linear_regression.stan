@@ -5,9 +5,8 @@ data {
   vector[N] y;      // outcome vector
 }
 parameters {
-  real a1;	// random intercepts #1 for groups
+  real a;	// random intercepts #1 for groups
   real b1;       // random slopes for groups #1 
-  real a2;	// random intercepts #2 for groups
   real b2;       // random slopes #2 for groups
   real cp;	// random changepoints for groups
   //real b_group; // group-level coefficient
@@ -22,22 +21,21 @@ transformed parameters {
   // conditional_mean depends on whether x is <> cp
   for (i in 1:N) {
     if (x[i] < cp) {
-      conditional_mean[i] = a1 + b1 * (x[i] - cp);
+      conditional_mean[i] = a + b1 * (x[i] - cp);
     } else {
-      conditional_mean[i] = a2 + b2 * (x[i] - cp);
-    }
+      conditional_mean[i] = a + b2 * (x[i] - cp);    }
   }
 }
 model {
   // priors
   sigma_y ~ normal(0,2) T[0,]; 
-  a1 ~ normal(0, 2);
-  a2 ~ normal(0, 2);  
+  a ~ normal(0, 2);
   b1 ~ normal(0, 2);  
   b2 ~ normal(0, 2);  
-  cp ~ normal(0, 0.5);
+  cp ~ normal(0, 0.1);
   // likelihood
   for (i in 1:N)
     y[i] ~ normal(conditional_mean[i], sigma_y);  // likelihood
 }
+ 
 

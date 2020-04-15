@@ -77,6 +77,30 @@ d <- mutate(d, ppt.std = scale(ppt), ppt.norm.std = scale(ppt.norm), tmean.norm.
 
 #### Test run a mixed model on the data in stan 
 
+# SINGLE_LEVEL VERSION
+
+# Set up data for stan
+d_test <- dplyr::filter(d, species=="PSME")
+d_test <- d_test[!is.na(d_test$rwi) & !is.na(d_test$ppt.z),]
+# optionally subsample for testing speed
+d_test <- filter(d_test, cluster.y == "Sierra") # cluster.y == "Yose" |
+
+stan.data <- list(N=nrow(d_test),  y = d_test$rwi, x = d_test$ppt.z)
+
+# Run model 
+
+model.path <- ("./scripts/analysis-climate-sensitivity/simple_piecewise_linear_regression.stan")
+m <- stan(file=model.path, data=stan.data, iter=2000, chains=4)
+
+# Check results
+print(m)
+check_hmc_diagnostics(m)
+stan_dens(m, pars = c("a1", "b1", "a2", "b2","sigma_y", "cp"))
+
+
+
+# HIERARCHICAL VERSION 
+
 # Set up data for stan
 d_test <- dplyr::filter(d, species=="PSME")
 d_test <- d_test[!is.na(d_test$rwi) & !is.na(d_test$ppt.z),]
@@ -87,13 +111,12 @@ d_test$plot_index <- match(d_test$plot.id, unique(d_test$plot.id))
 d_plot_test <- summarise(group_by(d_test, plot.id), cluster.y = first(cluster.y), raw_width_mean = mean(raw_width, na.rm=T), ppt.norm = mean(ppt.norm, na.rm=T), ppt.norm.std = mean(ppt.norm.std, na.rm=T))
 d_plot_test
 
-
 stan.data <- list(N=nrow(d_test), N_groups = max(d_test$plot_index), y = d_test$rwi, x = d_test$ppt.z, x_group = d_plot_test$ppt.norm.std, group_index = d_test$plot_index)
 
 # Run model 
 
 #model.path <- ("./scripts/analysis-climate-sensitivity/lmm_random_slopes_2_level.stan")
-model.path <- ("./scripts/analysis-climate-sensitivity/simple_piecewise_linear_regression.stan")
+model.path <- ("./scripts/analysis-climate-sensitivity/hierarchical_piecewise_linear_regression.stan")
 m <- stan(file=model.path, data=stan.data, iter=1000, chains=4)
 
 # Check results
