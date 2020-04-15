@@ -82,7 +82,7 @@ d_test <- dplyr::filter(d, species=="PSME")
 d_test <- d_test[!is.na(d_test$rwi) & !is.na(d_test$ppt.z),]
 
 # Subsample data to speed up testing 
-d_test <- filter(d_test, cluster.y == "Yose" |  cluster.y == "Sierra")
+d_test <- filter(d_test, cluster.y == "Sierra") # cluster.y == "Yose" |
 d_test$plot_index <- match(d_test$plot.id, unique(d_test$plot.id))
 d_plot_test <- summarise(group_by(d_test, plot.id), cluster.y = first(cluster.y), raw_width_mean = mean(raw_width, na.rm=T), ppt.norm = mean(ppt.norm, na.rm=T), ppt.norm.std = mean(ppt.norm.std, na.rm=T))
 d_plot_test
@@ -92,7 +92,8 @@ stan.data <- list(N=nrow(d_test), N_groups = max(d_test$plot_index), y = d_test$
 
 # Run model 
 
-model.path <- ("./scripts/analysis-climate-sensitivity/lmm_random_slopes_2_level.stan")
+#model.path <- ("./scripts/analysis-climate-sensitivity/lmm_random_slopes_2_level.stan")
+model.path <- ("./scripts/analysis-climate-sensitivity/simple_piecewise_linear_regression.stan")
 m <- stan(file=model.path, data=stan.data, iter=1000, chains=4)
 
 # Check results
@@ -128,11 +129,12 @@ m0 <- brm(mod.form, data=brms.data, prior=prior, family=gaussian(), chains=3, co
 # This is based on code by Paul Buerkner at https://discourse.mc-stan.org/t/piecewise-linear-mixed-models-with-a-random-change-point/5306 
 
 bform <- bf(
-  rwi ~ b0 + b1 * ppt.z * step(alpha - ppt.z) + 
-    b2 * ppt.z * step(ppt.z - alpha) + b3 * ppt.z1, 
-  b0 + b1 + b2 + b3 + alpha ~ 1 + (1|plot.id/tree.id), #(1|cluster.y/plot.id)
-  # to keep omega within the age range of 600 and 1400
-  #nlf(omega ~ inv_logit(alpha) * 2 - 1),
+  #rwi ~ b0 + b1 * ppt.z * step(alpha - ppt.z) + 
+  #  b2 * (ppt.z-alpha) * step(ppt.z - alpha) + b3 * ppt.z1, 
+  #b0 + b1 + b2 + b3 + alpha ~ 1 + (1|plot.id/tree.id), #(1|cluster.y/plot.id)
+  rwi ~ (b0 + b1 * ppt.z )*step(alpha - ppt.z) + 
+  (b2 +  b3 * ppt.z) * step(ppt.z - alpha),
+  b0 + b1 + b2 + b3 + alpha ~ 1 + (1|plot.id),
   nl = TRUE
 )
 
