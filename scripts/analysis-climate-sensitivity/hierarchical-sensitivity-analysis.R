@@ -81,21 +81,22 @@ d <- mutate(d, ppt.std = scale(ppt), ppt.norm.std = scale(ppt.norm), tmean.norm.
 
 # Set up data for stan
 d_test <- dplyr::filter(d, species=="PSME")
-d_test <- d_test[!is.na(d_test$rwi) & !is.na(d_test$ppt.z),]
+d_test <- d_test[!is.na(d_test$rwi) & !is.na(d_test$ppt.z) & !is.na(d_test$ppt.std),]
 # optionally subsample for testing speed
-d_test <- filter(d_test, cluster.y == "Sierra") # cluster.y == "Yose" |
+d_test <- filter(d_test, cluster.y == "Tahoe") # cluster.y == "Yose" |
 
 stan.data <- list(N=nrow(d_test),  y = d_test$rwi, x = d_test$ppt.z)
+# test with standardized absolute precip data
+#stan.data <- list(N=nrow(d_test),  y = d_test$rwi, x = as.vector(d_test$ppt.std))
 
 # Run model 
-
 model.path <- ("./scripts/analysis-climate-sensitivity/simple_piecewise_linear_regression.stan")
 m <- stan(file=model.path, data=stan.data, iter=2000, chains=4)
 
 # Check results
 print(m)
 check_hmc_diagnostics(m)
-stan_dens(m, pars = c("a1", "b1", "a2", "b2","sigma_y", "cp"))
+stan_dens(m, pars = c("a","b1", "b2","sigma_y", "cp"))
 
 
 
@@ -106,25 +107,38 @@ d_test <- dplyr::filter(d, species=="PSME")
 d_test <- d_test[!is.na(d_test$rwi) & !is.na(d_test$ppt.z),]
 
 # Subsample data to speed up testing 
-d_test <- filter(d_test, cluster.y == "Sierra") # cluster.y == "Yose" |
+#d_test <- filter(d_test, cluster.y == "Sierra" | cluster.y == "Yose")
 d_test$plot_index <- match(d_test$plot.id, unique(d_test$plot.id))
-d_plot_test <- summarise(group_by(d_test, plot.id), cluster.y = first(cluster.y), raw_width_mean = mean(raw_width, na.rm=T), ppt.norm = mean(ppt.norm, na.rm=T), ppt.norm.std = mean(ppt.norm.std, na.rm=T))
+d_test$cluster_index <- match(d_test$cluster.y, unique(d_test$cluster.y))
+d_plot_test <- summarise(group_by(d_test, plot.id), cluster.y = first(cluster.y), raw_width_mean = mean(raw_width, na.rm=T), ppt.norm = mean(ppt.norm, na.rm=T), ppt.norm.std = mean(ppt.norm.std, na.rm=T), ppt.mean.within = mean(ppt, na.rm=T), ppt.sd.within = sd(ppt, na.rm=T))
 d_plot_test
+d_cluster_test <- summarise(group_by(d_test, cluster.y), cluster.x = first(cluster.x), raw_width_mean = mean(raw_width, na.rm=T), ppt.norm = mean(ppt.norm, na.rm=T), ppt.norm.std = mean(ppt.norm.std, na.rm=T), ppt_mean = mean(ppt, na.rm=T))
+# Add in the average within-cluster sd of ppt 
+d_within_test <- summarise(group_by(d_plot_test, cluster.y), ppt.mean.within = mean(ppt.mean.within, na.rm=T), ppt.sd.within = mean(ppt.sd.within, na.rm=T))
+# Hack -- reorder the summary to match the cluster index -- not sure how to do this better 
+d_within_test <- d_within_test[c(3, 2, 4, 1),]
 
-stan.data <- list(N=nrow(d_test), N_groups = max(d_test$plot_index), y = d_test$rwi, x = d_test$ppt.z, x_group = d_plot_test$ppt.norm.std, group_index = d_test$plot_index)
+stan.data <- list(N=nrow(d_test), N_groups = max(d_test$cluster_index), y = d_test$rwi, x = as.vector(d_test$ppt.z), group_index = d_test$cluster_index, x_group_mean = d_within_test$ppt.mean.within, x_group_sd = d_within_test$ppt.sd.within)
 
 # Run model 
 
 #model.path <- ("./scripts/analysis-climate-sensitivity/lmm_random_slopes_2_level.stan")
 model.path <- ("./scripts/analysis-climate-sensitivity/hierarchical_piecewise_linear_regression.stan")
-m <- stan(file=model.path, data=stan.data, iter=1000, chains=4)
+m <- stan(file=model.path, data=stan.data, iter=1000, chains=3)
 
 # Check results
-print(m)
+msum <- summary(m)
+head(msum$summary, 20)
 check_hmc_diagnostics(m)
-stan_dens(m, pars = c("mu_a", "mu_b", "b_group","sigma_y", "sigma_a", "sigma_b"))
+stan_dens(m, pars = c("a", "mu_b1", "mu_b2", "mu_cp", "sigma_y", "sigma_b1", "sigma_b2", "sigma_cp"))
+plot(m, pars=c("b1", "b2", "cp"))
 
-# Works ok for the 2 southern clusters, not the 2 northern ones. Not sure why... 
+# Note order of clusters: Tahoe  Sierra Yose   Plumas
+# Using ppt.z, tahoe sierra and yose in expected order, but plumas has steepest low-precip sensitivity. Should 'unstandardize" these changepoints for interpretation 
+# 
+
+# Using ppt.std, Plumas has the highest changepoint.
+
 
 # Next steps: 
 # - perhaps add a level of nesting for cluster
@@ -142,7 +156,7 @@ stan_dens(m, pars = c("mu_a", "mu_b", "b_group","sigma_y", "sigma_a", "sigma_b")
 
 mod.form <- brmsformula(rwi ~ ppt.z + ppt.norm.std + ppt.z1 + lag(rwi, 1) + (1 + ppt.z | plot.id))
 
-brms.data <- dplyr::filter(d, species=="PSME")
+brms_data <- dplyr::filter(d, species=="PSME")
 
 prior <- c(set_prior("normal(0, 2)", class = "Intercept", coef = ""), set_prior("normal(0, 2)", class = "b", coef = ""), set_prior("cauchy(0, 2)", class = "sd", coef = ""))
 
@@ -152,16 +166,16 @@ m0 <- brm(mod.form, data=brms.data, prior=prior, family=gaussian(), chains=3, co
 # This is based on code by Paul Buerkner at https://discourse.mc-stan.org/t/piecewise-linear-mixed-models-with-a-random-change-point/5306 
 
 bform <- bf(
-  #rwi ~ b0 + b1 * ppt.z * step(alpha - ppt.z) + 
-  #  b2 * (ppt.z-alpha) * step(ppt.z - alpha) + b3 * ppt.z1, 
+  rwi ~ b0 + b1 * (ppt.z - alpha) * step(alpha - ppt.z) + 
+    b2 * (ppt.z-alpha) * step(ppt.z - alpha) + b3 * ppt.z1, 
   #b0 + b1 + b2 + b3 + alpha ~ 1 + (1|plot.id/tree.id), #(1|cluster.y/plot.id)
-  rwi ~ (b0 + b1 * ppt.z )*step(alpha - ppt.z) + 
-  (b2 +  b3 * ppt.z) * step(ppt.z - alpha),
+  #rwi ~ (b0 + b1 * ppt.z )*step(alpha - ppt.z) + 
+  #(b2 +  b3 * ppt.z) * step(ppt.z - alpha),
   b0 + b1 + b2 + b3 + alpha ~ 1 + (1|plot.id),
   nl = TRUE
 )
 
-df <- filter(d_psme, cluster.y == "Sierra")
+df <- filter(brms_data, cluster.y == "Sierra")
 
 bprior <- prior(normal(0, 3), nlpar = "b0") +
   prior(normal(0, 3), nlpar = "b1") +
@@ -178,7 +192,6 @@ summary(fit)
 
 # you need the github version of brms for this to run
 marginal_effects(fit)
-
 
 ranef(fit)
 
