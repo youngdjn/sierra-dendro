@@ -131,19 +131,16 @@ msum <- summary(m)
 head(msum$summary, 20)
 check_hmc_diagnostics(m)
 stan_dens(m, pars = c("a", "mu_b1", "mu_b2", "mu_cp", "sigma_y", "sigma_b1", "sigma_b2", "sigma_cp"))
-plot(m, pars=c("b1", "b2", "cp"))
+plot(m, pars=c("b1", "b2", "cp")
+plot(m, pars= "cp_abs")
 
 # Note order of clusters: Tahoe  Sierra Yose   Plumas
 # Using ppt.z, tahoe sierra and yose in expected order, but plumas has steepest low-precip sensitivity. Should 'unstandardize" these changepoints for interpretation 
-# 
-
-# Using ppt.std, Plumas has the highest changepoint.
 
 
 # Next steps: 
-# - perhaps add a level of nesting for cluster
-# - add lag1 rwi and ppt.z1 as explanatory variables
-# - implement change point regression for ppt.z, with ppt.norm as explanatory variable for the slopes and change point (maybe implement the 3 changepoint variables as a multivariate normal)
+# - add lag1 rwi as explanatory variable
+
 
 
           
