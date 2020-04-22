@@ -3,10 +3,12 @@
 # 2) filters the data based on species, year, and number of data points per tree; 
 
 library(dplyr)
+library(reshape2)
 library(readr)
 library(ggplot2)
 library(brms)
 library(rstan)
+library(bayesplot)
 
 # Set stan options 
 options(mc.cores = parallel::detectCores())
@@ -118,21 +120,57 @@ d_within_test <- summarise(group_by(d_plot_test, cluster.y), ppt.mean.within = m
 # Hack -- reorder the summary to match the cluster index -- not sure how to do this better 
 d_within_test <- d_within_test[c(3, 2, 4, 1),]
 
-stan.data <- list(N=nrow(d_test), N_groups = max(d_test$cluster_index), y = d_test$rwi, x = as.vector(d_test$ppt.z), group_index = d_test$cluster_index, x_group_mean = d_within_test$ppt.mean.within, x_group_sd = d_within_test$ppt.sd.within)
+# Clusters as groups 
+#stan.data <- list(N=nrow(d_test), N_groups = max(d_test$cluster_index), y = d_test$rwi, x = as.vector(d_test$ppt.z), group_index = d_test$cluster_index, x_group_mean = d_within_test$ppt.mean.within, x_group_sd = d_within_test$ppt.sd.within)
+
+# Plots as groups 
+
 
 # Run model 
 
-#model.path <- ("./scripts/analysis-climate-sensitivity/lmm_random_slopes_2_level.stan")
-model.path <- ("./scripts/analysis-climate-sensitivity/hierarchical_piecewise_linear_regression.stan")
-m <- stan(file=model.path, data=stan.data, iter=1000, chains=3)
+# using ppt.z
+#model.path <- ("./scripts/analysis-climate-sensitivity/hierarchical_piecewise_linear_regression.stan")
+#m <- stan(file=model.path, data=stan.data, iter=2000, chains=3)
+stan.data <- list(N=nrow(d_test), N_groups = max(d_test$plot_index), y = d_test$rwi, x = as.vector(d_test$ppt.std), group_index = d_test$plot_index, x_group_mean = d_plot_test$ppt.mean.within, x_sd = d_plot_test$ppt.sd.within)
+
+# using ppt.std
+stan.data <- list(N=nrow(d_test), N_groups = max(d_test$plot_index), y = d_test$rwi, x = as.vector(d_test$ppt), group_index = d_test$plot_index, x_mean = mean(d_test$ppt, na.rm=T), x_sd = sd(d_test$ppt, na.rm=T))
+
+model.path <- ("./scripts/analysis-climate-sensitivity/hierarchical_piecewise_absolute_ppt.stan")
+m <- stan(file=model.path, data=stan.data, iter=2000, chains=3)
+
+
 
 # Check results
 msum <- summary(m)
 head(msum$summary, 20)
 check_hmc_diagnostics(m)
 stan_dens(m, pars = c("a", "mu_b1", "mu_b2", "mu_cp", "sigma_y", "sigma_b1", "sigma_b2", "sigma_cp"))
-plot(m, pars=c("b1", "b2", "cp")
-plot(m, pars= "cp_abs")
+plot(m, pars=c("b1", "b2", "cp"))
+
+
+# Function to plot distribution of parameters while relabeling groups
+parplot <- function(model.name, pars=NULL, labels=NULL) { 
+  require(bayesplot)
+  if (is.null(pars)) df <- as.data.frame(m) else df <- as.data.frame(m, pars=pars)
+  if (!is.null(labels)) names(df) = labels
+  mcmc_intervals(df)
+}
+
+parplot(m, pars="cp_abs", labels = as.character(d_plot_test$plot.id))
+parplot(m, pars="cp", labels = as.character(d_plot_test$plot.id))
+parplot(m, pars="a", labels = as.character(d_plot_test$plot.id))
+parplot(m, pars="b1", labels = as.character(d_plot_test$plot.id))
+parplot(m, pars="b2", labels = as.character(d_plot_test$plot.id))
+
+cp_abs <- as.data.frame(m, pars="cp_abs")
+names(cp_abs) <- as.character(d_plot_test$plot.id)
+mcmc_intervals(cp_abs)
+
+plot(m, pars = "cp_abs") + scale_y_discrete(labels=as.character(d_plot_test$plot.id))
+plot(m, pars = "b1")
+plot(m, pars = "b2")
+stan_trace(m, pars=c("a", "mu_b1", "mu_b2", "mu_cp")
 
 # Note order of clusters: Tahoe  Sierra Yose   Plumas
 # Using ppt.z, tahoe sierra and yose in expected order, but plumas has steepest low-precip sensitivity. Should 'unstandardize" these changepoints for interpretation 
@@ -140,7 +178,6 @@ plot(m, pars= "cp_abs")
 
 # Next steps: 
 # - add lag1 rwi as explanatory variable
-
 
 
           
