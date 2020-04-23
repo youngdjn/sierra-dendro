@@ -1,0 +1,72 @@
+
+data {
+  int<lower=0> N;   // number of data items
+  int<lower=0> N_groups; // number of groups
+  vector[N] x;   // individual-level predictor vector
+  vector[N] y;      // outcome vector
+  vector[N_groups] x_group_mean; // mean of x for each group 
+  vector[N_groups] x_group_sd; // sd of x for each group 
+  vector[N_groups] z;   // group-level predictor vector 
+  int<lower=1,upper=N_groups> group_index[N]; // group index
+}
+parameters {
+  real a;	
+  //real mu_a;           // overall intercept #1
+  real b1[N_groups];       // random slopes for groups #1 
+  real mu_b1;         // overall slope #1 
+  real b2[N_groups];       // random slopes #2 for groups
+  real mu_b2;         // overall slope #2
+  real cp[N_groups];	// random changepoints for groups
+  real mu_cp;           // overall changepoint
+  real b_group_cp; // group-level coefficient
+  real b_group_b1; // group-level coefficient
+  real b_group_b2; // group-level coefficient
+  real<lower=0> sigma_y;  // error scale -- individual level
+  //real<lower=0> sigma_a;  // error scale -- group level intercept #1
+  real<lower=0> sigma_b1;  // error scale -- group level slope #1
+  real<lower=0> sigma_b2;  // error scale -- group level slope #2
+  real<lower=0> sigma_cp;  // error scale -- group level changepoint
+}
+transformed parameters { 
+  vector[N] conditional_mean; 
+  vector[N_groups] cp_abs;
+    
+  // conditional_mean depends on whether x is <> cp
+  for (i in 1:N) {
+    if (x[i] < cp[group_index[i]]) {
+      conditional_mean[i] = a + b1[group_index[i]] * (x[i] - cp[group_index[i]]);
+    } else {
+      conditional_mean[i] = a + b2[group_index[i]] * (x[i] - cp[group_index[i]]);
+    }
+  }
+  
+  // back-calculate changepoint values for each group based on its mean and sd of ppt 
+  for (j in 1:N_groups) {
+    cp_abs[j] = cp[j] * x_group_sd[j] + x_group_mean[j];
+  }
+}
+model {
+  // group-level priors
+  for (n in 1:N_groups) {
+  	//a[n] ~ normal(mu_a, sigma_a);
+    b1[n] ~ normal(mu_b1 + b_group_b1 * z[n], sigma_b1); //
+    b2[n] ~ normal(mu_b2 + b_group_b2 * z[n], sigma_b2); // 
+    cp[n] ~ normal(mu_cp + b_group_cp * z[n], sigma_cp); // 
+  }
+  // overall priors
+  //mu_a ~ normal(0, 2); 
+  mu_b1 ~ normal(0, 2);
+  mu_b2 ~ normal(0, 2);
+  mu_cp ~ normal(0, 0.5);
+  b_group_cp ~ normal(0, 2);
+  sigma_y ~ normal(0,2) T[0,]; 
+  //sigma_a ~ normal(0,2) T[0,]; 
+  sigma_b1 ~ normal(0,2) T[0,];
+  sigma_b2 ~ normal(0,2) T[0,];
+  sigma_cp ~ normal(0,2) T[0,];
+  
+  // Likelihood
+  for (i in 1:N)
+    y[i] ~ normal(conditional_mean[i], sigma_y);  // likelihood
+}
+
