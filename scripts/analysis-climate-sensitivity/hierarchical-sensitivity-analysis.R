@@ -85,20 +85,36 @@ d <- mutate(d, ppt.std = scale(ppt), ppt.norm.std = scale(ppt.norm), tmean.norm.
 d_test <- dplyr::filter(d, species=="PSME")
 d_test <- d_test[!is.na(d_test$rwi) & !is.na(d_test$ppt.z) & !is.na(d_test$ppt.std),]
 # optionally subsample for testing speed
-d_test <- filter(d_test, cluster.y == "Tahoe") # cluster.y == "Yose" |
+d_test <- filter(d_test, cluster.y == "Plumas") # cluster.y == "Yose" |
 
-stan.data <- list(N=nrow(d_test),  y = d_test$rwi, x = d_test$ppt.z)
+#stan.data <- list(N=nrow(d_test),  y = d_test$rwi, x = d_test$ppt.z)
 # test with standardized absolute precip data
-#stan.data <- list(N=nrow(d_test),  y = d_test$rwi, x = as.vector(d_test$ppt.std))
+stan.data <- list(N=nrow(d_test),  y = d_test$rwi, x = as.vector(d_test$ppt.std))
 
 # Run model 
 model.path <- ("./scripts/analysis-climate-sensitivity/simple_piecewise_linear_regression.stan")
-m <- stan(file=model.path, data=stan.data, iter=2000, chains=4)
+m <- stan(file=model.path, data=stan.data, iter=2000, chains=3)
 
 # Check results
 print(m)
 check_hmc_diagnostics(m)
 stan_dens(m, pars = c("a","b1", "b2","sigma_y", "cp"))
+plot(m, pars=c("a","b1", "b2","sigma_y", "cp"))
+
+# Check results for cp one cluster at a time using ppt.std as x 
+# Sierra: -0.27
+# Yose: 0.22
+# Tahoe: -0.42
+# Plumas: -0.24
+# OK I don't understand this. It seems inconsistent with the plots of the raw data. Maybe we need to look down into the plot level, and that's where most of the variation is. 
+
+
+# Single level version for all plots, one plot at a time
+d_test$plot_index <- match(d_test$plot.id, unique(d_test$plot.id))
+
+stan.data <- list(N=nrow(d_test), N_groups = max(d_test$plot_index), y = d_test$rwi, x = as.vector(d_test$ppt.std), group_index = d_test$plot_index)
+
+
 
 
 
@@ -133,8 +149,8 @@ d_within_test <- d_within_test[c(3, 2, 4, 1),]
 #m <- stan(file=model.path, data=stan.data, iter=2000, chains=3)
 stan.data <- list(N=nrow(d_test), N_groups = max(d_test$plot_index), y = d_test$rwi, x = as.vector(d_test$ppt.std), group_index = d_test$plot_index, x_group_mean = d_plot_test$ppt.mean.within, x_sd = d_plot_test$ppt.sd.within)
 
-# using ppt.std
-stan.data <- list(N=nrow(d_test), N_groups = max(d_test$plot_index), y = d_test$rwi, x = as.vector(d_test$ppt), group_index = d_test$plot_index, x_mean = mean(d_test$ppt, na.rm=T), x_sd = sd(d_test$ppt, na.rm=T))
+# using ppt
+stan.data <- list(N=nrow(d_test), N_groups = max(d_test$plot_index), y = d_test$rwi, x = as.vector(d_test$ppt), group_index = d_test$plot_index) #x_mean = mean(d_test$ppt, na.rm=T), x_sd = sd(d_test$ppt, na.rm=T)
 
 model.path <- ("./scripts/analysis-climate-sensitivity/hierarchical_piecewise_absolute_ppt.stan")
 m <- stan(file=model.path, data=stan.data, iter=2000, chains=3)
@@ -145,8 +161,41 @@ m <- stan(file=model.path, data=stan.data, iter=2000, chains=3)
 msum <- summary(m)
 head(msum$summary, 20)
 check_hmc_diagnostics(m)
-stan_dens(m, pars = c("a", "mu_b1", "mu_b2", "mu_cp", "sigma_y", "sigma_b1", "sigma_b2", "sigma_cp"))
+stan_dens(m, pars = c("mu_a", "mu_b1", "mu_b2", "mu_cp", "sigma_y", "sigma_b1", "sigma_b2", "sigma_cp"))
 plot(m, pars=c("b1", "b2", "cp"))
+
+
+# 2-level model with pptnorm predicting group-level coefficients
+
+# Set up data for stan
+d_test <- dplyr::filter(d, species=="PSME")
+d_test <- d_test[!is.na(d_test$rwi) & !is.na(d_test$ppt.z),]
+
+# Subsample data to speed up testing 
+#d_test <- filter(d_test, cluster.y == "Sierra" | cluster.y == "Yose")
+d_test$plot_index <- match(d_test$plot.id, unique(d_test$plot.id))
+d_test$cluster_index <- match(d_test$cluster.y, unique(d_test$cluster.y))
+d_plot_test <- summarise(group_by(d_test, plot.id), cluster.y = first(cluster.y), raw_width_mean = mean(raw_width, na.rm=T), ppt.norm = mean(ppt.norm, na.rm=T), ppt.norm.std = mean(ppt.norm.std, na.rm=T), ppt.mean.within = mean(ppt, na.rm=T), ppt.sd.within = sd(ppt, na.rm=T))
+d_plot_test
+
+# Run model 
+
+# using ppt.z
+#model.path <- ("./scripts/analysis-climate-sensitivity/hierarchical_piecewise_linear_regression.stan")
+#m <- stan(file=model.path, data=stan.data, iter=2000, chains=3)
+stan.data <- list(N=nrow(d_test), N_groups = max(d_test$plot_index), y = d_test$rwi, x = as.vector(d_test$ppt.std), group_index = d_test$plot_index, x_group_mean = d_plot_test$ppt.mean.within, x_group_sd = d_plot_test$ppt.sd.within, z = d_plot_test$ppt.norm.std)
+
+model.path <- ("./scripts/analysis-climate-sensitivity/piecewise_linear_regression_2-level.stan")
+m <- stan(file=model.path, data=stan.data, iter=2000, chains=3)
+
+
+
+# Check results
+msum <- summary(m)
+head(msum$summary, 20)
+check_hmc_diagnostics(m)
+stan_dens(m, pars = c("mu_a", "mu_b1", "mu_b2", "mu_cp", "sigma_y", "sigma_b1", "sigma_b2", "sigma_cp"))
+plot(m, pars=c("b1", "b2", "cp", "b_group_cp"))
 
 
 # Function to plot distribution of parameters while relabeling groups
