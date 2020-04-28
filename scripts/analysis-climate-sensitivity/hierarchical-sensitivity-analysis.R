@@ -6,9 +6,11 @@ library(dplyr)
 library(reshape2)
 library(readr)
 library(ggplot2)
+library(gridExtra)
 library(brms)
 library(rstan)
 library(bayesplot)
+library(arm)
 
 # Set stan options 
 options(mc.cores = parallel::detectCores())
@@ -110,9 +112,42 @@ plot(m, pars=c("a","b1", "b2","sigma_y", "cp"))
 
 
 # Single level version for all plots, one plot at a time
+d_test <- dplyr::filter(d, species=="PSME")
+d_test <- d_test[!is.na(d_test$rwi) & !is.na(d_test$ppt.std),]
 d_test$plot_index <- match(d_test$plot.id, unique(d_test$plot.id))
+plot_info <- summarise(group_by(d_test, plot_index), plot.id = first(plot.id), cluster.y = first(cluster.y), ppt.norm = first(ppt.norm), rad.tot = first(rad.tot))
 
 stan.data <- list(N=nrow(d_test), N_groups = max(d_test$plot_index), y = d_test$rwi, x = as.vector(d_test$ppt.std), group_index = d_test$plot_index)
+
+model.path <- ("./scripts/analysis-climate-sensitivity/simple_piecewise_linear_regression_by_plot.stan")
+m <- stan(file=model.path, data=stan.data, iter=5000, chains=3)
+
+save(m, file = "./working-data/piecewise_plot_no_pool.RData")
+
+# Check results
+summary(m, pars="cp")$summary
+
+a <- as.data.frame(m, pars="a")
+cp <- as.data.frame(m, pars="cp")
+b1 <- as.data.frame(m, pars="b1")
+b2 <- as.data.frame(m, pars="b2")
+plot_info <- cbind(plot_info, cp = apply(cp, 2, mean), a = apply(a, 2, mean), b1 = apply(b1, 2, mean), b2 = apply(b2, 2, mean))
+
+cp_plot <- ggplot(plot_info, aes(x = ppt.norm, y = cp, color = cluster.y)) + geom_point() + theme_classic()
+a_plot <- ggplot(plot_info, aes(x = ppt.norm, y = a, color = cluster.y)) + geom_point() + theme_classic()
+b1_plot <- ggplot(plot_info, aes(x = ppt.norm, y = b1, color = cluster.y)) + geom_point() + theme_classic()
+b2_plot <- ggplot(plot_info, aes(x = ppt.norm, y = b2, color = cluster.y)) + geom_point() + theme_classic()
+
+grid.arrange(a_plot, cp_plot, b1_plot, b2_plot, nrow=2)
+
+ggplot(plot_info, aes(x = rad.tot, y = cp, color = cluster.y)) + geom_point() + theme_classic()
+
+cor(plot_info[,c("a", "b1", "b2", "cp", "ppt.norm", "rad.tot")])
+
+names(cp) <- as.character(unique(d_test$plot.id))
+mcmc_intervals(cp)
+
+# within plumas, changepoint location is negatively correlated with ppt.norm and with rad.tot
 
 
 
