@@ -117,12 +117,14 @@ d_test <- d_test[!is.na(d_test$rwi) & !is.na(d_test$ppt.std),]
 d_test$plot_index <- match(d_test$plot.id, unique(d_test$plot.id))
 plot_info <- summarise(group_by(d_test, plot_index), plot.id = first(plot.id), cluster.y = first(cluster.y), ppt.norm = first(ppt.norm), rad.tot = first(rad.tot))
 
-stan.data <- list(N=nrow(d_test), N_groups = max(d_test$plot_index), y = d_test$rwi, x = as.vector(d_test$ppt.std), group_index = d_test$plot_index)
+stan.data <- list(N=nrow(d_test), N_groups = max(d_test$plot_index), y = d_test$rwi, x = as.vector(d_test$ppt.z), group_index = d_test$plot_index)
 
 model.path <- ("./scripts/analysis-climate-sensitivity/simple_piecewise_linear_regression_by_plot.stan")
-m <- stan(file=model.path, data=stan.data, iter=5000, chains=3)
+m <- stan(file=model.path, data=stan.data, iter=1000, chains=3)
 
-save(m, file = "./working-data/piecewise_plot_no_pool.RData")
+#save(m, file = "./working-data/piecewise_plot_no_pool.RData")
+#save(m, file = "./working-data/piecewise_plot_no_pool_ppt-z.RData")
+#save(m, file = "./working-data/piecewise_plot_no_pool_fixed_a.RData")
 
 # Check results
 summary(m, pars="cp")$summary
@@ -137,16 +139,21 @@ cp_plot <- ggplot(plot_info, aes(x = ppt.norm, y = cp, color = cluster.y)) + geo
 a_plot <- ggplot(plot_info, aes(x = ppt.norm, y = a, color = cluster.y)) + geom_point() + theme_classic()
 b1_plot <- ggplot(plot_info, aes(x = ppt.norm, y = b1, color = cluster.y)) + geom_point() + theme_classic()
 b2_plot <- ggplot(plot_info, aes(x = ppt.norm, y = b2, color = cluster.y)) + geom_point() + theme_classic()
-
 grid.arrange(a_plot, cp_plot, b1_plot, b2_plot, nrow=2)
 
-ggplot(plot_info, aes(x = rad.tot, y = cp, color = cluster.y)) + geom_point() + theme_classic()
 
 cor(plot_info[,c("a", "b1", "b2", "cp", "ppt.norm", "rad.tot")])
 
+names(a) <- as.character(unique(d_test$plot.id))
+mcmc_intervals(a)
 names(cp) <- as.character(unique(d_test$plot.id))
 mcmc_intervals(cp)
 
+plot(cp~a, plot_info)
+summary(lm(b1~scale(ppt.norm), plot_info))
+summary(lm(b2~scale(ppt.norm), plot_info))
+summary(lm(cp~scale(ppt.norm), plot_info))
+summary(lm(a~scale(ppt.norm), plot_info))
 # within plumas, changepoint location is negatively correlated with ppt.norm and with rad.tot
 
 
@@ -312,4 +319,49 @@ summary(fit)
 marginal_effects(fit)
 
 ranef(fit)
+
+## Check single plots for ppt vs ppt.z 
+bform0 <- bf(
+  rwi ~ b0 + b1 * ppt.std, 
+  b0  + b1 ~ (1|tree.id),
+  nl = TRUE
+)
+
+bform1 <- bf(
+  rwi ~ b0 + b1 * (ppt.std - alpha) * step(alpha - ppt.std) + 
+    b2 * (ppt.std-alpha) * step(ppt.std - alpha), 
+  b0  + b1 + b2 + alpha ~ (1|tree.id),
+  nl = TRUE
+)
+
+bprior0 <- prior(normal(0, 3), nlpar="b0") +
+  prior(normal(0, 3), nlpar = "b1")
+
+bprior1 <- prior(normal(0, 3), nlpar="b0") +
+  prior(normal(0, 3), nlpar = "b1") +
+  prior(normal(0, 3), nlpar = "b2") +
+  prior(normal(0, 0.5), nlpar = "alpha")
+
+#Plumas plots SS81  SS81B SSC1  SSC5B SS82  SSA76 TR15  TULLB TR01 
+#brms_data <- dplyr::filter(d, species=="PSME" & plot.id=="TR01")
+
+# Sierra plots RR20  RR33  RR7   RT02C RR71  RT02D RT01  RT02B RR32 
+brms_data <- dplyr::filter(d, species=="PSME" & plot.id=="RT01")
+
+#make_stancode(bform1, data = brms_data, prior = bprior)
+m0 <- brm(bform0, data=brms_data, prior=bprior0, family=gaussian(), chains=3, cores=3, iter=1000)
+m1 <- brm(bform1, data=brms_data, prior=bprior1, family=gaussian(), chains=3, cores=3, iter=1000)
+
+loo(m0, m1)
+
+
+marginal_effects(m0) 
+
+ggplot(brms_data, aes(x=ppt, y=rwi, colour=tree.id)) + geom_point() + legend_none()
+
+# Basically, most Plumas plots don't see the accellerating sensitivity at lower preciptation. They are shallow and linear. Not sure what to make of that! TR01 seems to be an exception with a decline around 1000 mm ppt 
+
+# Idea: rather than focusing on changepoints and slopes, what about focusing on the total amount of lost productivity due to enhanced sensitivity at low precipitation? This could be something like: take shallow slope for normal/high precipitation conditions and extrapolate low-precip growth rate (to the left of the changepoint if any). Then subtract the fitted growth rate according to the steeper "left-hand" slope, and sum. We could calculate total area of that triangle (down to some standard minimum like 400mm). AND we could calculate the actual loss, which combines that area with the observed rainfall distribution. You could even calculate the relative proportion variation in "lost growth" attributable to tree sensitivity, and to rainfall distribution. This would be a tree-specific property but could be summarized for plots and clusters, or correlated with environmental variables. 
+
+
 
