@@ -393,33 +393,12 @@ bprior1 <- prior(normal(0, 3), nlpar="b0") +
 
 brms_data <- filter(d, species=="PSME" & cluster.y == "Sierra")
 brms_data$plot.id <- droplevels(brms_data$plot.id)
-plot_m0 <- brms_data %>% 
+plot_m1 <- brms_data %>% 
   split(.$plot.id) %>%
-  map(~ brm(bform0, data=., prior=bprior0, family=gaussian(), chains=3, cores=3, iter=1000))
+  map(~ brm(bform1, data=., prior=bprior1, family=gaussian(), chains=3, cores=3, iter=1000))
+
+# Compare models for all plots
+for (i in 1:length(plot_m0)) loo(plot_m0[[i]], plot_m1[[i]])
 
 
-plots <- unique(brms_data$plot.id)
-
-fit_compare_piecewise <- function(brms_data, iter=1000, chains=3, cores=3){ 
-  require(brms); 
-  bform0 <- bf(rwi ~ b0 + b1 * ppt.std, b0  + b1 ~ (1|tree.id), nl = TRUE)
-  bform1 <- bf(rwi ~ b0 + b1 * (ppt.std - alpha) * step(alpha - ppt.std) + b2 * (ppt.std-alpha) * step(ppt.std - alpha), b0  + b1 + b2 + alpha ~ (1|tree.id), nl = TRUE)
-  bprior0 <- prior(normal(0, 3), nlpar="b0") + prior(normal(0, 3), nlpar = "b1")
-  bprior1 <- prior(normal(0, 3), nlpar="b0") + prior(normal(0, 3), nlpar = "b1") + prior(normal(0, 3), nlpar = "b2") + prior(normal(0, 0.5), nlpar = "alpha")
-  m0 <- brm(bform0, data=brms_data, prior=bprior0, family=gaussian(), chains=chains, cores=cores, iter=iter)
-  m1 <- brm(bform1, data=brms_data, prior=bprior1, family=gaussian(), chains=chains, cores=cores, iter=iter)
-  loo_out <- loo(m0, m1, cores=cores)
-  return(list(m0, m1, loo_out))
-}
-
-m0_model_list <-list()
-m1_model_list <- list()
-loo_result_list <- list()
-for (i in plots[1:2]) {
-  brms_sub <- dplyr::filter(brms_data, plot.id == i)
-  out <- fit_compare_piecewise(brms_sub)
-  m0_model_list <- c(m0_model_list, out[[1]])
-  m1_model_list <- c(m1_model_list, out[[2]])
-  loo_result_list <- c(loo_result_list, out[[3]])
-}
 
