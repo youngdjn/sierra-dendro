@@ -11,6 +11,7 @@ library(brms)
 library(rstan)
 library(bayesplot)
 library(arm)
+library(purrr)
 
 # Set stan options 
 options(mc.cores = parallel::detectCores())
@@ -352,7 +353,7 @@ brms_data <- dplyr::filter(d, species=="PSME" & plot.id=="RT01")
 m0 <- brm(bform0, data=brms_data, prior=bprior0, family=gaussian(), chains=3, cores=3, iter=1000)
 m1 <- brm(bform1, data=brms_data, prior=bprior1, family=gaussian(), chains=3, cores=3, iter=1000)
 
-loo(m0, m1)
+loo(m0, m1, reloo=TRUE)
 
 
 marginal_effects(m0) 
@@ -364,4 +365,61 @@ ggplot(brms_data, aes(x=ppt, y=rwi, colour=tree.id)) + geom_point() + legend_non
 # Idea: rather than focusing on changepoints and slopes, what about focusing on the total amount of lost productivity due to enhanced sensitivity at low precipitation? This could be something like: take shallow slope for normal/high precipitation conditions and extrapolate low-precip growth rate (to the left of the changepoint if any). Then subtract the fitted growth rate according to the steeper "left-hand" slope, and sum. We could calculate total area of that triangle (down to some standard minimum like 400mm). AND we could calculate the actual loss, which combines that area with the observed rainfall distribution. You could even calculate the relative proportion variation in "lost growth" attributable to tree sensitivity, and to rainfall distribution. This would be a tree-specific property but could be summarized for plots and clusters, or correlated with environmental variables. 
 
 
+##### I think we need to go through and see how many plots have substantially nonlinear response.
+
+# to do this, we can just loop through all the plots and save results, then set up another function to extract the bits we need from the model objects. 
+## Check single plots for ppt vs ppt.z 
+bform0 <- bf(
+  rwi ~ b0 + b1 * ppt.std, 
+  b0  + b1 ~ (1|tree.id),
+  nl = TRUE
+)
+
+bform1 <- bf(
+  rwi ~ b0 + b1 * (ppt.std - alpha) * step(alpha - ppt.std) + 
+    b2 * (ppt.std-alpha) * step(ppt.std - alpha), 
+  b0  + b1 + b2 + alpha ~ (1|tree.id),
+  nl = TRUE
+)
+
+bprior0 <- prior(normal(0, 3), nlpar="b0") +
+  prior(normal(0, 3), nlpar = "b1")
+
+bprior1 <- prior(normal(0, 3), nlpar="b0") +
+  prior(normal(0, 3), nlpar = "b1") +
+  prior(normal(0, 3), nlpar = "b2") +
+  prior(normal(0, 0.5), nlpar = "alpha")
+
+
+brms_data <- filter(d, species=="PSME" & cluster.y == "Sierra")
+brms_data$plot.id <- droplevels(brms_data$plot.id)
+plot_m0 <- brms_data %>% 
+  split(.$plot.id) %>%
+  map(~ brm(bform0, data=., prior=bprior0, family=gaussian(), chains=3, cores=3, iter=1000))
+
+
+plots <- unique(brms_data$plot.id)
+
+fit_compare_piecewise <- function(brms_data, iter=1000, chains=3, cores=3){ 
+  require(brms); 
+  bform0 <- bf(rwi ~ b0 + b1 * ppt.std, b0  + b1 ~ (1|tree.id), nl = TRUE)
+  bform1 <- bf(rwi ~ b0 + b1 * (ppt.std - alpha) * step(alpha - ppt.std) + b2 * (ppt.std-alpha) * step(ppt.std - alpha), b0  + b1 + b2 + alpha ~ (1|tree.id), nl = TRUE)
+  bprior0 <- prior(normal(0, 3), nlpar="b0") + prior(normal(0, 3), nlpar = "b1")
+  bprior1 <- prior(normal(0, 3), nlpar="b0") + prior(normal(0, 3), nlpar = "b1") + prior(normal(0, 3), nlpar = "b2") + prior(normal(0, 0.5), nlpar = "alpha")
+  m0 <- brm(bform0, data=brms_data, prior=bprior0, family=gaussian(), chains=chains, cores=cores, iter=iter)
+  m1 <- brm(bform1, data=brms_data, prior=bprior1, family=gaussian(), chains=chains, cores=cores, iter=iter)
+  loo_out <- loo(m0, m1, cores=cores)
+  return(list(m0, m1, loo_out))
+}
+
+m0_model_list <-list()
+m1_model_list <- list()
+loo_result_list <- list()
+for (i in plots[1:2]) {
+  brms_sub <- dplyr::filter(brms_data, plot.id == i)
+  out <- fit_compare_piecewise(brms_sub)
+  m0_model_list <- c(m0_model_list, out[[1]])
+  m1_model_list <- c(m1_model_list, out[[2]])
+  loo_result_list <- c(loo_result_list, out[[3]])
+}
 
