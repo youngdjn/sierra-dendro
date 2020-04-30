@@ -262,7 +262,7 @@ mcmc_intervals(cp_abs)
 plot(m, pars = "cp_abs") + scale_y_discrete(labels=as.character(d_plot_test$plot.id))
 plot(m, pars = "b1")
 plot(m, pars = "b2")
-stan_trace(m, pars=c("a", "mu_b1", "mu_b2", "mu_cp")
+stan_trace(m, pars=c("a", "mu_b1", "mu_b2", "mu_cp"))
 
 # Note order of clusters: Tahoe  Sierra Yose   Plumas
 # Using ppt.z, tahoe sierra and yose in expected order, but plumas has steepest low-precip sensitivity. Should 'unstandardize" these changepoints for interpretation 
@@ -358,7 +358,7 @@ loo(m0, m1, reloo=TRUE)
 
 marginal_effects(m0) 
 
-ggplot(brms_data, aes(x=ppt, y=rwi, colour=tree.id)) + geom_point() + legend_none()
+ggplot(brms_data, aes(x=ppt, y=rwi, group=tree.id)) + geom_point() + legend_none()
 
 # Basically, most Plumas plots don't see the accellerating sensitivity at lower preciptation. They are shallow and linear. Not sure what to make of that! TR01 seems to be an exception with a decline around 1000 mm ppt 
 
@@ -397,8 +397,63 @@ plot_m1 <- brms_data %>%
   split(.$plot.id) %>%
   map(~ brm(bform1, data=., prior=bprior1, family=gaussian(), chains=3, cores=3, iter=1000))
 
+lapply(plot_m1, FUN=f<-function(m){return(summary(plot_m1[[1]])$fixed[4])})
+
 # Compare models for all plots
-for (i in 1:length(plot_m0)) loo(plot_m0[[i]], plot_m1[[i]])
+plot_loo <- list() 
+for (i in 1:length(plot_m0)) plot_loo <- c(plot_loo, loo(plot_m0[[i]], plot_m1[[i]]))
+plot_loo
+marginal_effects(m1_sierra)
+# most plots better with linear model 
 
+# All plots together for Sierra
+bform0 <- bf(
+  rwi ~ b0 + b1 * ppt.std, 
+  b0  + b1 ~ (1|plot.id),
+  nl = TRUE
+)
+bform1 <- bf(
+  rwi ~ b0 + b1 * (ppt.std - alpha) * step(alpha - ppt.std) + 
+    b2 * (ppt.std-alpha) * step(ppt.std - alpha), 
+  b0  + b1 + b2 + alpha ~ (1|plot.id),
+  nl = TRUE
+)
+brms_data <- filter(d, species=="PSME" & cluster.y == "Sierra")
+#brms_data <- filter(brms_data, tree.id == "1405")
+m1_sierra <- brm(bform1, data=brms_data, prior=bprior1, family=gaussian(), chains=3, cores=3, iter=1000)
+marginal_effects(m1_tahoe)
+m0_sierra <- brm(bform0, data=brms_data, prior=bprior0, family=gaussian(), chains=3, cores=3, iter=1000)
+loo(m0_sierra, m1_sierra)
+# For the whole cluster together, nonlinear is better (dloo = -10.7)
 
+# Graphically compare results for 4 clusters
 
+alphas <- data.frame(sierra = as.data.frame(m1_sierra, pars="alpha")$b_alpha_Intercept, yose = as.data.frame(m1_yose, pars="alpha")$b_alpha_Intercept, tahoe = as.data.frame(m1_tahoe, pars="alpha")$b_alpha_Intercept, plumas = as.data.frame(m1_plumas, pars="alpha")$b_alpha_Intercept)
+
+b1s <- data.frame(sierra = as.data.frame(m1_sierra, pars="b1")$b_b1_Intercept, yose = as.data.frame(m1_yose, pars="b1")$b_b1_Intercept, tahoe = as.data.frame(m1_tahoe, pars="b1")$b_b1_Intercept, plumas = as.data.frame(m1_plumas, pars="b1")$b_b1_Intercept)
+
+b2s <- data.frame(sierra = as.data.frame(m1_sierra, pars="b2")$b_b2_Intercept, yose = as.data.frame(m1_yose, pars="b2")$b_b2_Intercept, tahoe = as.data.frame(m1_tahoe, pars="b2")$b_b2_Intercept, plumas = as.data.frame(m1_plumas, pars="b2")$b_b2_Intercept)
+mcmc_intervals(alphas)
+mcmc_intervals(b1s)
+mcmc_intervals(b2s)
+
+loo(m1_sierra, m0_sierra)
+loo(m1_yose, m0_yose)
+loo(m1_tahoe, m0_tahoe)
+loo(m1_plumas, m0_plumas)
+
+d %>% 
+  split(.$cluster.x) %>%
+  map(~lm(rwi~ppt.std, data=.x)) %>%
+  map(summary)
+
+# check individual tree response shapes
+ggplot(d[d$cluster.y=="Sierra",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + facet_wrap(~tree.id) + theme(legend.position="none")
+ggplot(d[d$cluster.y=="Plumas",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + facet_wrap(~tree.id) + theme(legend.position="none")
+ggplot(d[d$cluster.y=="Yose"& d$cluster.x=="SL",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + facet_wrap(~plot.id) + theme(legend.position="none")
+ggplot(d[d$cluster.y=="Tahoe"& d$cluster.x=="NL",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + facet_wrap(~plot.id) + theme(legend.position="none")
+# cluster-wide response shapes
+ggplot(d[d$cluster.y=="Sierra",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + theme(legend.position="none")
+ggplot(d[d$cluster.y=="Plumas",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + theme(legend.position="none")
+ggplot(d[d$cluster.y=="Yose"& d$cluster.x=="SL",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + theme(legend.position="none")
+ggplot(d[d$cluster.y=="Tahoe" & d$cluster.x=="NL",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + theme(legend.position="none")
