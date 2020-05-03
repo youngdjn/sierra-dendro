@@ -25,6 +25,11 @@ trees <- read.csv("./data/compiled-for-analysis/trees.csv")
 # Keep only relevant rows of tree data
 trees_select <- trees[ , c("tree.id", "species", "plot.id", "x", "y", "elev", "cluster", "voronoi.area", "radius", "radius.external")]
 
+# Create lagged values of rwi
+years <- years %>% 
+  split(.$tree.id) %>%
+  map_dfr(f <- function(x) {return(mutate(x, rwi1=lag(rwi,1), rwi2=lag(rwi,2), rwi3=lag(rwi,3)))})
+
 # Merge
 d_long <- left_join(trees_select, years, by="tree.id") %>% 
     left_join(plots, by="plot.id")
@@ -57,25 +62,15 @@ length(unique(d$tree.id))
 d <- read.csv("./working-data/tree-ring-data-long.csv")
 
 # Keep only the columns needed for analysis
-d <- dplyr::select(d, cluster.x, cluster.y, plot.id, tree.id, species, year, rwi, raw_width, ba, bai, voronoi.area, radius.external, ppt.norm, tmean.norm, rad.tot, ppt, tmean, starts_with("ppt.z"), starts_with("tmean.z"))
+d <- dplyr::select(d, cluster.x, cluster.y, plot.id, tree.id, species, year, starts_with("rwi"), raw_width, ba, bai, voronoi.area, radius.external, ppt.norm, tmean.norm, rad.tot, starts_with("ppt"), starts_with("tmean"))
 head(d)
 
 #### NOTE: Get TMAX as well -- Derek will extract
 
 #### NOTE: Get spline values as well 
 
-#### NOTE: ALSO get lag1 rwi values
-
-# Create lag1 variable for RWI
-#rwi_wide <- select(d, c(tree.id, rwi, year)) %>%
-#            reshape(idvar = "tree.id", v.names="rwi", timevar="year", direction="wide")
-#rwi_mat <- as.matrix(select(rwi_wide, -tree.id))
-#rwi_wide_lag1 <- as.data.frame(t(apply(rwi_mat, 1, lag)))
-#rwi_wide_lag1$tree.id <- rwi_wide$tree.id
-#rwi_long_lag1 <- reshape(rwi_wide_lag1, direction="long", idvar="tree.id", timevar="year", varying=list(1:ncol(rwi_mat)), sep=".") # Broken -- doesn't preserve year
-
 # Center and scale unstandardized columns 
-d <- mutate(d, ppt.std = scale(ppt), ppt.norm.std = scale(ppt.norm), tmean.norm.std = scale(tmean.norm), year.std = scale(year), rad.tot.std = scale(rad.tot), voronoi.area.std = scale(voronoi.area))
+d <- mutate(d, ppt.std = scale(ppt), ppt1.std = scale(ppt1), ppt2.std = scale(ppt2), ppt3.std = scale(ppt3), tmean.std=scale(tmean), tmean1.std=scale(tmean1), tmean2.std=scale(tmean2), tmean3.std=scale(tmean3), ppt.norm.std = scale(ppt.norm), tmean.norm.std = scale(tmean.norm), year.std = scale(year), rad.tot.std = scale(rad.tot), voronoi.area.std = scale(voronoi.area))
 
 
 
@@ -441,6 +436,42 @@ loo(m1_sierra, m0_sierra)
 loo(m1_yose, m0_yose)
 loo(m1_tahoe, m0_tahoe)
 loo(m1_plumas, m0_plumas)
+# Much better fit with nonlinear model in Yose, Tahoe, and Plumas. Less advantage for Sierra (borderline equallly good to do linear fit). 
+
+# Now let's compare what it looks like if we fit all clusters together
+# (could be an issue with shrinkage among clusters?)
+brms_data <- filter(d, species=="PSME")
+bform0 <- bf(
+  rwi ~ b0 + b1 * ppt.std, 
+  b0  + b1 ~ (1|cluster.y/plot.id),
+  nl = TRUE
+)
+bform1 <- bf(
+  rwi ~ b0 + b1 * (ppt.std - alpha) * step(alpha - ppt.std) + 
+    b2 * (ppt.std-alpha) * step(ppt.std - alpha), 
+  b0  + b1 + b2 + alpha ~ (1|cluster.y/plot.id),
+  nl = TRUE
+)
+bprior0 <- prior(normal(0, 3), nlpar="b0") +
+  prior(normal(0, 3), nlpar = "b1")
+bprior1 <- prior(normal(0, 3), nlpar="b0") +
+  prior(normal(0, 3), nlpar = "b1") +
+  prior(normal(0, 3), nlpar = "b2") +
+  prior(normal(0, 0.5), nlpar = "alpha")
+m1_all <- brm(bform1, data=brms_data, prior=bprior1, family=gaussian(), chains=3, cores=3, iter=2000)
+m0_all <- brm(bform0, data=brms_data, prior=bprior0, family=gaussian(), chains=3, cores=3, iter=2000)
+marginal_effects(m1_all)
+
+# Model comparisons: ~ ppt.std + (1|cluster.y/plot.id) - all Pareto k estimates ok
+loo(m0_all, m1_all)
+#elpd_diff se_diff
+#m1_all    0.0       0.0 
+#m0_all -170.8      18.4 
+
+# Model comparisons with covariates
+
+
+
 
 d %>% 
   split(.$cluster.x) %>%
