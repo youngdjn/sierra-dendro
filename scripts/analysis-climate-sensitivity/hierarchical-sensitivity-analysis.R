@@ -413,9 +413,20 @@ bform1 <- bf(
   b0  + b1 + b2 + alpha ~ (1|plot.id),
   nl = TRUE
 )
-brms_data <- filter(d, species=="PSME" & cluster.y == "Sierra")
+brms_data <- filter(d, species=="PSME")# & cluster.y == "Yose")
 #brms_data <- filter(brms_data, tree.id == "1405")
-m1_sierra <- brm(bform1, data=brms_data, prior=bprior1, family=gaussian(), chains=3, cores=3, iter=1000)
+m0_Yose <- brm(bform1, data=brms_data, prior=bprior1, family=gaussian(), chains=3, cores=3, iter=1000)
+
+# Test fitting smoothed response for each cluster
+# Q does brms pool across clusters at all withthis syntax?
+test1 <- brm(rwi~s(ppt.std, by=cluster.y), data=brms_data, chains=3, cores=3, iter=1000)
+marginal_smooths(test1)
+
+
+
+
+
+
 marginal_effects(m1_tahoe)
 m0_sierra <- brm(bform0, data=brms_data, prior=bprior0, family=gaussian(), chains=3, cores=3, iter=1000)
 loo(m0_sierra, m1_sierra)
@@ -468,10 +479,48 @@ loo(m0_all, m1_all)
 #m1_all    0.0       0.0 
 #m0_all -170.8      18.4 
 
-# Model comparisons with covariates
+# Model comparison with covariates
+brms_data <- filter(d, species=="PSME")
+bform0 <- bf(
+  rwi ~ b0 + b1*ppt.std + b2*ppt1.std + b3*tmean.std + b4 * rad.tot.std + b5*rwi1 + b6*rwi2, 
+  b0 + b1 + b2 + b3 + b4 + b5 + b6 ~ (1|cluster.y/plot.id),
+  nl = TRUE
+)
+bform1 <- bf(
+  rwi ~ b0 + b1 * (ppt.std - alpha) * step(alpha - ppt.std) + 
+    b2 * (ppt.std-alpha) * step(ppt.std - alpha) + b3*ppt1.std + b4*tmean.std + b5*rad.tot.std + b6*rwi1 + b7*rwi2, 
+  b0  + b1 + b2 + b3 + b4 + b5 + b6 + b7 + alpha ~ (1|cluster.y/plot.id),
+  nl = TRUE
+)
+bprior0 <- prior(normal(0, 1), nlpar="b0") +
+  prior(normal(0, 1), nlpar = "b1") +   
+  prior(normal(0, 1), nlpar = "b2") +
+  prior(normal(0, 1), nlpar = "b3") +
+  prior(normal(0, 1), nlpar = "b4") +
+  prior(normal(0, 1), nlpar = "b5") +
+  prior(normal(0, 1), nlpar = "b6")
+bprior1 <- prior(normal(0, 1), nlpar="b0") +
+  prior(normal(0, 1), nlpar = "b1") +
+  prior(normal(0, 1), nlpar = "b2") +
+  prior(normal(0, 1), nlpar = "b3") +
+  prior(normal(0, 1), nlpar = "b4") +
+  prior(normal(0, 1), nlpar = "b5") +
+  prior(normal(0, 1), nlpar = "b6") +
+  prior(normal(0, 1), nlpar = "b7") +
+  prior(normal(0, 0.5), nlpar = "alpha")
 
+m0_all <- brm(bform0, data=brms_data, prior=bprior0, family=gaussian(), chains=3, cores=3, iter=1000)
+m1_all <- brm(bform1, data=brms_data, prior=bprior1, family=gaussian(), chains=3, cores=3, iter=1000)
 
+marginal_effects(m1_all)
+pp_check(m1_all)
+pp_check(m0_all)
+stanplot(m1_all)
+bayes_R2(m0_all)
 
+y <- m1_all$data$rwi
+yrep <- posterior_predict(m1_all)
+ppc_boxplot(, yrep)
 
 d %>% 
   split(.$cluster.x) %>%
@@ -479,12 +528,12 @@ d %>%
   map(summary)
 
 # check individual tree response shapes
-ggplot(d[d$cluster.y=="Sierra",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + facet_wrap(~tree.id) + theme(legend.position="none")
-ggplot(d[d$cluster.y=="Plumas",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + facet_wrap(~tree.id) + theme(legend.position="none")
-ggplot(d[d$cluster.y=="Yose"& d$cluster.x=="SL",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + facet_wrap(~plot.id) + theme(legend.position="none")
-ggplot(d[d$cluster.y=="Tahoe"& d$cluster.x=="NL",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + facet_wrap(~plot.id) + theme(legend.position="none")
+ggplot(d[d$cluster.y == "Sierra",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + facet_wrap(~tree.id) + theme(legend.position="none")
+ggplot(d[d$cluster.y == "Plumas",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + facet_wrap(~tree.id) + theme(legend.position="none")
+ggplot(d[d$cluster.y == "Yose"& d$cluster.x == "SL",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + facet_wrap(~plot.id) + theme(legend.position="none")
+ggplot(d[d$cluster.y == "Tahoe"& d$cluster.x == "NL",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + facet_wrap(~plot.id) + theme(legend.position="none")
 # cluster-wide response shapes
-ggplot(d[d$cluster.y=="Sierra",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + theme(legend.position="none")
-ggplot(d[d$cluster.y=="Plumas",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + theme(legend.position="none")
-ggplot(d[d$cluster.y=="Yose"& d$cluster.x=="SL",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + theme(legend.position="none")
-ggplot(d[d$cluster.y=="Tahoe" & d$cluster.x=="NL",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + theme(legend.position="none")
+ggplot(d[d$cluster.y == "Sierra",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + theme(legend.position="none")
+ggplot(d[d$cluster.y == "Plumas",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + theme(legend.position="none")
+ggplot(d[d$cluster.y == "Yose" & d$cluster.x == "SL",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + theme(legend.position="none")
+ggplot(d[d$cluster.y == "Tahoe" & d$cluster.x == "NL",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + theme(legend.position="none")
