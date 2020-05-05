@@ -485,18 +485,19 @@ loo(m0_all, m1_all)
 #brms_data <- filter(d, species=="PSME")
 # subset plots randomly from the clusters with more (9 plots per cluster)
 plots <- c(as.character(unique(d$plot.id[d$cluster.y=="Sierra"])), as.character(sample(unique(d$plot.id[d$cluster.y=="Yose"]), 9)), as.character(sample(unique(d$plot.id[d$cluster.y=="Tahoe"]), 9)), as.character(unique(d$plot.id[d$cluster.y=="Plumas"])))
-brms_data <- filter(d, species=="PSME" & plot.id %in% plots & year > 1990)
+brms_data <- filter(d, species=="PSME" & plot.id %in% plots & year > 1976)
 
 bform0 <- bf(
   rwi ~ b0 + b1*ppt.std + b2*ppt1.std + b3*tmean.std + b4 * rad.tot.std + b5*rwi1 + b6*rwi2, 
-  b0 + b1 + b2 + b3 + b4 + b5 + b6 ~ (1|cluster.y/plot.id),
+  b1  ~ (1|cluster.y/plot.id/tree.id),
+  b0 + b2 + b3 + b4 + b5 + b6 ~ (1|cluster.y),
   nl = TRUE
 )
 bform1 <- bf(
   rwi ~ b0 + b1 * (ppt.std - alpha) * step(alpha - ppt.std) + 
     b2 * (ppt.std-alpha) * step(ppt.std - alpha) + b3*ppt1.std + b4*tmean.std + b5*rad.tot.std + b6*rwi1 + b7*rwi2, 
-  b0  + b1 + b2 + alpha ~ (1|cluster.y/plot.id),
-  b3 + b4 + b5 + b6 + b7 ~ (1|cluster.y),
+  b1 + b2 + alpha ~ (1|cluster.y/plot.id/tree.id),
+  b0 + b3 + b4 + b5 + b6 + b7 ~ (1|cluster.y),
   nl = TRUE
 )
 bprior0 <- prior(normal(0, 1), nlpar="b0") +
@@ -506,7 +507,7 @@ bprior0 <- prior(normal(0, 1), nlpar="b0") +
   prior(normal(0, 1), nlpar = "b4") +
   prior(normal(0, 1), nlpar = "b5") +
   prior(normal(0, 1), nlpar = "b6")
-bprior1 <- prior(normal(0, 1), nlpar="b0") +
+bprior1 <- prior(normal(0.5, 0.5), nlpar="b0") +
   prior(normal(0, 1), nlpar = "b1") +
   prior(normal(0, 1), nlpar = "b2") +
   prior(normal(0, 1), nlpar = "b3") +
@@ -521,10 +522,14 @@ cor(brms_data[,c("ppt.std", "ppt1.std","tmean.std","rad.tot.std", "rwi1", "rwi2"
 vif(lm(rwi~ppt.std + I(ppt^2) +  ppt1.std + tmean.std + rad.tot.std + rwi1+rwi2, data=brms_data)) # low vif for linear terms, high if we add ppt^2
 
 
-m0_all <- brm(bform0, data=brms_data, prior=bprior0, family=gaussian(), chains=3, cores=3, iter=1000)
-m1_all <- brm(bform1, data=brms_data, prior=bprior1, family=gaussian(), chains=3, cores=3, iter=1000) 
+m0_all <- brm(bform0, data=brms_data, prior=bprior0, family=gaussian(), chains=3, cores=3, iter=2000)
+m1_all <- brm(bform1, data=brms_data, prior=bprior1, family=gaussian(), chains=3, cores=3, iter=2000) 
 # 1000 iterationsof 3 parallel chains took ~10 hours
-save(m1_all, file="./working-data/current_regression_models.RData")
+#save(m1_all, file="./working-data/current_regression_models.RData")
+
+summary(m1_all)
+summary(m0_all)
+loo(m0_all, m1_all)
 
 marginal_effects(m1_all)
 pp_check(m1_all)
@@ -532,30 +537,34 @@ pp_check(m0_all)
 stanplot(m1_all)
 bayes_R2(m1_all)
 
-m1_ranef <- ranef(m1_all)
-
 get_variables(m1_all)
 
-m %>%
-  spread_draws(r_condition[condition,term]) %>%
-  head(10)
-
-# plot changepoint by cluster
-m1_all %>%
+# plot parameters by cluster
+m1_all %>% 
   spread_draws(b_alpha_Intercept, r_cluster.y__alpha[cluster.y,]) %>%
   mutate(cluster.y_mean = b_alpha_Intercept + r_cluster.y__alpha) %>%
   ggplot(aes(y = cluster.y, x = cluster.y_mean)) +
-  stat_halfeyeh()
-# not converging well! 
+  stat_halfeyeh() # Change point Rank: Plumas, Sierra, Tahoe, Yose
+m1_all %>%
+  spread_draws(b_b1_Intercept, r_cluster.y__b1[cluster.y,]) %>%
+  mutate(cluster.y_mean = b_b1_Intercept + r_cluster.y__b1) %>%
+  ggplot(aes(y = cluster.y, x = cluster.y_mean)) +
+  stat_halfeyeh() # steeper slopes all pretty similar
+m1_all %>%
+  spread_draws(b_b2_Intercept, r_cluster.y__b2[cluster.y,]) %>%
+  mutate(cluster.y_mean = b_b2_Intercept + r_cluster.y__b2) %>%
+  ggplot(aes(y = cluster.y, x = cluster.y_mean)) +
+  stat_halfeyeh() # To the right of inflection point, slopes shallowest in Plumas, steepest in Yose and Sierra. (what does this mean? note it corresponds to those having the steepest slopes in a linear fit)
+m1_all %>%
+  spread_draws(b_b2_Intercept, r_cluster.y__b2[cluster.y,]) %>%
+  mutate(cluster.y_mean = b_b2_Intercept + r_cluster.y__b2) %>%
+  ggplot(aes(y = cluster.y, x = cluster.y_mean)) +
+  stat_halfeyeh() 
 
-y <- m1_all$data$rwi
-yrep <- posterior_predict(m1_all)
-ppc_boxplot(, yrep)
-
-d %>% 
-  split(.$cluster.x) %>%
-  map(~lm(rwi~ppt.std, data=.x)) %>%
-  map(summary)
+ranef(m1_all)
+    
+ 
+ 
 
 # check individual tree response shapes
 ggplot(d[d$cluster.y == "Sierra",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + facet_wrap(~tree.id) + theme(legend.position="none")
@@ -569,6 +578,11 @@ ggplot(d[d$cluster.y == "Yose" & d$cluster.x == "SL",], aes(ppt.std, rwi))  + th
 ggplot(d[d$cluster.y == "Tahoe" & d$cluster.x == "NL",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + theme(legend.position="none")
 
 # Other ideas 
+
+# Is there still autocorrelation in the residuals? 
+
+# Are there species differences in coefficients? Species differences by cluster? 
+
 # Strength of autocorrelation by tree -- any systematic differences across precip gradients? Could look at both raw autocor in raw ring width, and at rwi, and at residuals of model? 
 
 # Some quantification of "additional lost growth" due to nonlinearity of response to low ppt. This is a combination of sensitivity threshold, low-precip slope, and the distribution of observed precip. Could map areas with high sensitivity, and also areas with high realized loss (by time period?)
