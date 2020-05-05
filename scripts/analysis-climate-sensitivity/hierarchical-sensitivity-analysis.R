@@ -2,6 +2,7 @@
 # 1) combines Derek's processed data into a long-form data frame for analysis;
 # 2) filters the data based on species, year, and number of data points per tree; 
 
+library(car)
 library(dplyr)
 library(reshape2)
 library(readr)
@@ -12,6 +13,7 @@ library(rstan)
 library(bayesplot)
 library(arm)
 library(purrr)
+library(tidybayes)
 
 # Set stan options 
 options(mc.cores = parallel::detectCores())
@@ -480,7 +482,11 @@ loo(m0_all, m1_all)
 #m0_all -170.8      18.4 
 
 # Model comparison with covariates
-brms_data <- filter(d, species=="PSME")
+#brms_data <- filter(d, species=="PSME")
+# subset plots randomly from the clusters with more (9 plots per cluster)
+plots <- c(as.character(unique(d$plot.id[d$cluster.y=="Sierra"])), as.character(sample(unique(d$plot.id[d$cluster.y=="Yose"]), 9)), as.character(sample(unique(d$plot.id[d$cluster.y=="Tahoe"]), 9)), as.character(unique(d$plot.id[d$cluster.y=="Plumas"])))
+brms_data <- filter(d, species=="PSME" & plot.id %in% plots & year > 1990)
+
 bform0 <- bf(
   rwi ~ b0 + b1*ppt.std + b2*ppt1.std + b3*tmean.std + b4 * rad.tot.std + b5*rwi1 + b6*rwi2, 
   b0 + b1 + b2 + b3 + b4 + b5 + b6 ~ (1|cluster.y/plot.id),
@@ -489,7 +495,8 @@ bform0 <- bf(
 bform1 <- bf(
   rwi ~ b0 + b1 * (ppt.std - alpha) * step(alpha - ppt.std) + 
     b2 * (ppt.std-alpha) * step(ppt.std - alpha) + b3*ppt1.std + b4*tmean.std + b5*rad.tot.std + b6*rwi1 + b7*rwi2, 
-  b0  + b1 + b2 + b3 + b4 + b5 + b6 + b7 + alpha ~ (1|cluster.y/plot.id),
+  b0  + b1 + b2 + alpha ~ (1|cluster.y/plot.id),
+  b3 + b4 + b5 + b6 + b7 ~ (1|cluster.y),
   nl = TRUE
 )
 bprior0 <- prior(normal(0, 1), nlpar="b0") +
@@ -507,16 +514,39 @@ bprior1 <- prior(normal(0, 1), nlpar="b0") +
   prior(normal(0, 1), nlpar = "b5") +
   prior(normal(0, 1), nlpar = "b6") +
   prior(normal(0, 1), nlpar = "b7") +
-  prior(normal(0, 0.5), nlpar = "alpha")
+  prior(normal(-1, 0.5), nlpar = "alpha")
+
+# check autocorrelation of predictors
+cor(brms_data[,c("ppt.std", "ppt1.std","tmean.std","rad.tot.std", "rwi1", "rwi2")], use="pairwise.complete")
+vif(lm(rwi~ppt.std + I(ppt^2) +  ppt1.std + tmean.std + rad.tot.std + rwi1+rwi2, data=brms_data)) # low vif for linear terms, high if we add ppt^2
+
 
 m0_all <- brm(bform0, data=brms_data, prior=bprior0, family=gaussian(), chains=3, cores=3, iter=1000)
-m1_all <- brm(bform1, data=brms_data, prior=bprior1, family=gaussian(), chains=3, cores=3, iter=1000)
+m1_all <- brm(bform1, data=brms_data, prior=bprior1, family=gaussian(), chains=3, cores=3, iter=1000) 
+# 1000 iterationsof 3 parallel chains took ~10 hours
+save(m1_all, file="./working-data/current_regression_models.RData")
 
 marginal_effects(m1_all)
 pp_check(m1_all)
 pp_check(m0_all)
 stanplot(m1_all)
-bayes_R2(m0_all)
+bayes_R2(m1_all)
+
+m1_ranef <- ranef(m1_all)
+
+get_variables(m1_all)
+
+m %>%
+  spread_draws(r_condition[condition,term]) %>%
+  head(10)
+
+# plot changepoint by cluster
+m1_all %>%
+  spread_draws(b_alpha_Intercept, r_cluster.y__alpha[cluster.y,]) %>%
+  mutate(cluster.y_mean = b_alpha_Intercept + r_cluster.y__alpha) %>%
+  ggplot(aes(y = cluster.y, x = cluster.y_mean)) +
+  stat_halfeyeh()
+# not converging well! 
 
 y <- m1_all$data$rwi
 yrep <- posterior_predict(m1_all)
@@ -537,3 +567,10 @@ ggplot(d[d$cluster.y == "Sierra",], aes(ppt.std, rwi))  + theme_bw() + geom_poin
 ggplot(d[d$cluster.y == "Plumas",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + theme(legend.position="none")
 ggplot(d[d$cluster.y == "Yose" & d$cluster.x == "SL",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + theme(legend.position="none")
 ggplot(d[d$cluster.y == "Tahoe" & d$cluster.x == "NL",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + theme(legend.position="none")
+
+# Other ideas 
+# Strength of autocorrelation by tree -- any systematic differences across precip gradients? Could look at both raw autocor in raw ring width, and at rwi, and at residuals of model? 
+
+# Some quantification of "additional lost growth" due to nonlinearity of response to low ppt. This is a combination of sensitivity threshold, low-precip slope, and the distribution of observed precip. Could map areas with high sensitivity, and also areas with high realized loss (by time period?)
+
+# Can variation in threshold (alpha) be explained by latitude, or temperature variation at the same level of precip? 
