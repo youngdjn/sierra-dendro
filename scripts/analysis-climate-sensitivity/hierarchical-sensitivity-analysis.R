@@ -16,7 +16,7 @@ library(purrr)
 library(tidybayes)
 
 # Set stan options 
-options(mc.cores = parallel::detectCores())
+options(mc.cores = parallel::detectCores() - 2)
 rstan_options(auto_write = TRUE)
 
 #### Load and merge data ####
@@ -72,7 +72,8 @@ head(d)
 #### NOTE: Get spline values as well 
 
 # Center and scale unstandardized columns 
-d <- mutate(d, ppt.std = scale(ppt), ppt1.std = scale(ppt1), ppt2.std = scale(ppt2), ppt3.std = scale(ppt3), tmean.std=scale(tmean), tmean1.std=scale(tmean1), tmean2.std=scale(tmean2), tmean3.std=scale(tmean3), ppt.norm.std = scale(ppt.norm), tmean.norm.std = scale(tmean.norm), year.std = scale(year), rad.tot.std = scale(rad.tot), voronoi.area.std = scale(voronoi.area))
+stdize <- function(x) {return((x-mean(x, na.rm=TRUE))/sd(x, na.rm=TRUE))}
+d <- mutate(d, ppt.std = stdize(ppt), ppt1.std = stdize(ppt1), ppt2.std = stdize(ppt2), ppt3.std = stdize(ppt3), tmean.std=stdize(tmean), tmean1.std=stdize(tmean1), tmean2.std=stdize(tmean2), tmean3.std=stdize(tmean3), ppt.norm.std = stdize(ppt.norm), tmean.norm.std = stdize(tmean.norm), year.std = stdize(year), rad.tot.std = stdize(rad.tot), voronoi.area.std = stdize(voronoi.area))
 
 
 
@@ -93,7 +94,7 @@ stan.data <- list(N=nrow(d_test),  y = d_test$rwi, x = as.vector(d_test$ppt.std)
 
 # Run model 
 model.path <- ("./scripts/analysis-climate-sensitivity/simple_piecewise_linear_regression.stan")
-m <- stan(file=model.path, data=stan.data, iter=2000, chains=3)
+m <- stan(file=model.path, data=stan.data, iter=2000, chains=3, cores = 6, verbose=T)
 
 # Check results
 print(m)
@@ -490,24 +491,25 @@ brms_data <- mutate(brms_data, pipo = as.integer(species=="PIPO"), abco = as.int
 
 bform0 <- bf(
   rwi ~ b0 + b1*ppt.std + b2*ppt1.std + b3*tmean.std + b4 * rad.tot.std + b5*rwi1 + b6*rwi2, 
-  b1  ~ (1|cluster.y/plot.id/tree.id),
-  b0 + b2 + b3 + b4 + b5 + b6 ~ (1|cluster.y),
+  b0 + b1 + b2 ~ (1|clister.y),
+  b3 + b4 + b5 + b6   ~ (1|cluster.y/plot.id),
   nl = TRUE
 )
 bform1 <- bf(
   rwi ~ b0 + b1 * (ppt.std - alpha) * step(alpha - ppt.std) + 
-    b2 * (ppt.std-alpha) * step(ppt.std - alpha) + b3*ppt1.std + b4*tmean.std + b5*rad.tot.std + b6*rwi1 + b7*rwi2, 
-  b1 + b2 + alpha ~ (1|cluster.y/plot.id/tree.id),
-  b0 + b3 + b4 + b5 + b6 + b7 ~ (1|cluster.y),
+    b2 * (ppt.std-alpha) * step(ppt.std - alpha) + b3*ppt1.std + b4*tmean.std + b5*rad.tot.std + b6*rwi1 + b7*rwi2,
+   alpha + b1 + b2 ~ (1|cluster.y/plot.id),
+   b0 + b3 + b4 + b5 + b6 + b7 ~ (1|cluster.y),
   nl = TRUE
 )
-bprior0 <- prior(normal(0, 1), nlpar="b0") +
+bprior0 <- prior(normal(0.5, 0.5), nlpar="b0") +
   prior(normal(0, 1), nlpar = "b1") +   
-  prior(normal(0, 1), nlpar = "b2") +
+  prior(normal(0, 1, nlpar = "b2") +
   prior(normal(0, 1), nlpar = "b3") +
   prior(normal(0, 1), nlpar = "b4") +
   prior(normal(0, 1), nlpar = "b5") +
   prior(normal(0, 1), nlpar = "b6")
+  
 bprior1 <- prior(normal(0.5, 0.5), nlpar="b0") +
   prior(normal(0, 1), nlpar = "b1") +
   prior(normal(0, 1), nlpar = "b2") +
@@ -522,9 +524,10 @@ bprior1 <- prior(normal(0.5, 0.5), nlpar="b0") +
 cor(brms_data[,c("ppt.std", "ppt1.std","tmean.std","rad.tot.std", "rwi1", "rwi2")], use="pairwise.complete")
 vif(lm(rwi~ppt.std + I(ppt^2) +  ppt1.std + tmean.std + rad.tot.std + rwi1+rwi2, data=brms_data)) # low vif for linear terms, high if we add ppt^2
 
+make_stancode(bform1, data=brms_data, prior=bprior1, family=gaussian())
 
-m0_all <- brm(bform0, data=brms_data, prior=bprior0, family=gaussian(), chains=3, cores=3, iter=2000)
-m1_all <- brm(bform1, data=brms_data, prior=bprior1, family=gaussian(), chains=3, cores=3, iter=2000) 
+m0_all <- brm(bform0, data=brms_data, prior=bprior0, family=gaussian(), chains=3, cores=3, iter=1000)
+system.time(m1_all <- brm(bform1, data=brms_data, prior=bprior1, family=gaussian(), chains=3, cores=3, iter=2000))
 # 1000 iterationsof 3 parallel chains took ~10 hours
 save(m1_all, m0_all, file="./working-data/current_regression_models.RData")
 
@@ -558,13 +561,17 @@ m1_all %>%
   ggplot(aes(y = cluster.y, x = cluster.y_mean)) +
   stat_halfeyeh() # To the right of inflection point, slopes shallowest in Plumas, steepest in Yose and Sierra. (what does this mean? note it corresponds to those having the steepest slopes in a linear fit)
 m1_all %>%
-  spread_draws(b_b2_Intercept, r_cluster.y__b2[cluster.y,]) %>%
-  mutate(cluster.y_mean = b_b2_Intercept + r_cluster.y__b2) %>%
+  spread_draws(b_b0_Intercept, r_cluster.y__b0[cluster.y,]) %>%
+  mutate(cluster.y_mean = b_b0_Intercept + r_cluster.y__b0) %>%
   ggplot(aes(y = cluster.y, x = cluster.y_mean)) +
   stat_halfeyeh() 
 
 ranef(m1_all)
     
+    
+# Results: really no variation at the tree level (sds for random slopes and intercepts very near zero), so removing that level 
+# Convergence is poor when both intercept and b1 slope are allowed to vary by plot. So I'll allow it to vary only by cluster. 
+# Of the other explanatory variables, only b6 (lag1 rwi) is important, but it also shows not too much variation by cluster or plot. So for now, allow those to vary onlyby cluster. 
  
  #### Add species to the model 
 
