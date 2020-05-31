@@ -485,7 +485,8 @@ loo(m0_all, m1_all)
 #brms_data <- filter(d, species=="PSME")
 # subset plots randomly from the clusters with more (9 plots per cluster)
 plots <- c(as.character(unique(d$plot.id[d$cluster.y=="Sierra"])), as.character(sample(unique(d$plot.id[d$cluster.y=="Yose"]), 9)), as.character(sample(unique(d$plot.id[d$cluster.y=="Tahoe"]), 9)), as.character(unique(d$plot.id[d$cluster.y=="Plumas"])))
-brms_data <- filter(d, species=="PSME" & plot.id %in% plots & year > 1976)
+brms_data <- filter(d, plot.id %in% plots & year > 1976)
+brms_data <- mutate(brms_data, pipo = as.integer(species=="PIPO"), abco = as.integer(species=="ABCO"))
 
 bform0 <- bf(
   rwi ~ b0 + b1*ppt.std + b2*ppt1.std + b3*tmean.std + b4 * rad.tot.std + b5*rwi1 + b6*rwi2, 
@@ -525,17 +526,18 @@ vif(lm(rwi~ppt.std + I(ppt^2) +  ppt1.std + tmean.std + rad.tot.std + rwi1+rwi2,
 m0_all <- brm(bform0, data=brms_data, prior=bprior0, family=gaussian(), chains=3, cores=3, iter=2000)
 m1_all <- brm(bform1, data=brms_data, prior=bprior1, family=gaussian(), chains=3, cores=3, iter=2000) 
 # 1000 iterationsof 3 parallel chains took ~10 hours
-#save(m1_all, file="./working-data/current_regression_models.RData")
+save(m1_all, m0_all, file="./working-data/current_regression_models.RData")
 
 summary(m1_all)
-summary(m0_all)
-loo(m0_all, m1_all)
+summary(m0_all) # very little variation at individual tree level, can stick with plot and cluster levels
+loo(m0_all, m1_all) # changepoint model better 
 
 marginal_effects(m1_all)
 pp_check(m1_all)
 pp_check(m0_all)
 stanplot(m1_all)
 bayes_R2(m1_all)
+bayes_R2(m0_all)
 
 get_variables(m1_all)
 
@@ -543,7 +545,7 @@ get_variables(m1_all)
 m1_all %>% 
   spread_draws(b_alpha_Intercept, r_cluster.y__alpha[cluster.y,]) %>%
   mutate(cluster.y_mean = b_alpha_Intercept + r_cluster.y__alpha) %>%
-  ggplot(aes(y = cluster.y, x = cluster.y_mean)) +
+  ggplot(aes(y = cluster.y, x = cluster.y_mean)) + 
   stat_halfeyeh() # Change point Rank: Plumas, Sierra, Tahoe, Yose
 m1_all %>%
   spread_draws(b_b1_Intercept, r_cluster.y__b1[cluster.y,]) %>%
@@ -564,7 +566,136 @@ m1_all %>%
 ranef(m1_all)
     
  
- 
+ #### Add species to the model 
+
+# Try each species separately first 
+
+#brms_data <- mutate(brms_data, pipo = as.integer(species=="PIPO"), abco = as.integer(species=="ABCO"))
+
+bform0 <- bf(
+  rwi ~ b0 + b1*ppt.std + b2*ppt1.std + b3*tmean.std + b4 * rad.tot.std + b5*rwi1 + b6*rwi2, 
+  b1  ~ (1|cluster.y/plot.id),
+  b0 + b2 + b3 + b4 + b5 + b6 ~ (1|cluster.y),
+  nl = TRUE
+)
+bform1 <- bf(
+  rwi ~ b0 + b1 * (ppt.std - alpha) * step(alpha - ppt.std) + 
+    b2 * (ppt.std-alpha) * step(ppt.std - alpha) + b3*ppt1.std + b4*tmean.std + b5*rad.tot.std + b6*rwi1 + b7*rwi2, 
+  b1 + b2 + alpha ~ (1|cluster.y/plot.id),
+  b0 + b3 + b4 + b5 + b6 + b7 ~ (1|cluster.y),
+  nl = TRUE
+)
+bprior0 <- prior(normal(0, 1), nlpar="b0") +
+  prior(normal(0, 1), nlpar = "b1") +   
+  prior(normal(0, 1), nlpar = "b2") +
+  prior(normal(0, 1), nlpar = "b3") +
+  prior(normal(0, 1), nlpar = "b4") +
+  prior(normal(0, 1), nlpar = "b5") +
+  prior(normal(0, 1), nlpar = "b6")
+bprior1 <- prior(normal(0.5, 0.5), nlpar="b0") +
+  prior(normal(0, 1), nlpar = "b1") +
+  prior(normal(0, 1), nlpar = "b2") +
+  prior(normal(0, 1), nlpar = "b3") +
+  prior(normal(0, 1), nlpar = "b4") +
+  prior(normal(0, 1), nlpar = "b5") +
+  prior(normal(0, 1), nlpar = "b6") +
+  prior(normal(0, 1), nlpar = "b7") +
+  prior(normal(-1, 0.5), nlpar = "alpha")
+
+# ABCO
+brms_data <- filter(d, species=="ABCO")
+m0_abco <- brm(bform0, data=brms_data, prior=bprior0, family=gaussian(), chains=3, cores=3, iter=2000)
+m1_abco <- brm(bform1, data=brms_data, prior=bprior1, family=gaussian(), chains=3, cores=3, iter=2000) 
+marginal_effects(m1_abco)
+m1_abco %>% 
+  spread_draws(b_alpha_Intercept, r_cluster.y__alpha[cluster.y,]) %>%
+  mutate(cluster.y_mean = b_alpha_Intercept + r_cluster.y__alpha) %>%
+  ggplot(aes(y = cluster.y, x = cluster.y_mean)) + 
+  stat_halfeyeh() # Change point Rank: Plumas, Sierra, Tahoe, Yose
+m1_abco %>%
+  spread_draws(b_b1_Intercept, r_cluster.y__b1[cluster.y,]) %>%
+  mutate(cluster.y_mean = b_b1_Intercept + r_cluster.y__b1) %>%
+  ggplot(aes(y = cluster.y, x = cluster.y_mean)) +
+  stat_halfeyeh() # steeper slopes all pretty similar
+m1_abco %>%
+  spread_draws(b_b2_Intercept, r_cluster.y__b2[cluster.y,]) %>%
+  mutate(cluster.y_mean = b_b2_Intercept + r_cluster.y__b2) %>%
+  ggplot(aes(y = cluster.y, x = cluster.y_mean)) +
+  stat_halfeyeh() 
+loo(m0_abco, m1_abco)
+
+# PIPO 
+brms_data <- filter(d, species=="PIPO")
+m0_pipo <- brm(bform0, data=brms_data, prior=bprior0, family=gaussian(), chains=3, cores=3, iter=2000)
+m1_pipo <- brm(bform1, data=brms_data, prior=bprior1, family=gaussian(), chains=3, cores=3, iter=2000) 
+
+summary(m1_pipo)
+marginal_effects(m1_pipo)
+summary(m0_pipo) # very little variation at individual tree level, can stick with plot and cluster levels
+loo(m0_pipo, m1_pipo) # changepoint model better 
+
+marginal_effects(m1_pipo)
+pp_check(m1_pipo)
+pp_check(m0_pipo)
+stanplot(m1_pipo)
+bayes_R2(m1_pipo)
+bayes_R2(m0_pipo)
+
+m1_pipo %>% 
+  spread_draws(b_alpha_Intercept, r_cluster.y__alpha[cluster.y,]) %>%
+  mutate(cluster.y_mean = b_alpha_Intercept + r_cluster.y__alpha) %>%
+  ggplot(aes(y = cluster.y, x = cluster.y_mean)) + 
+  stat_halfeyeh() # not a lot of variation in changepoint
+m1_pipo %>% 
+  spread_draws(b_b1_Intercept, r_cluster.y__b1[cluster.y,]) %>%
+  mutate(cluster.y_mean = b_b1_Intercept + r_cluster.y__b1) %>%
+  ggplot(aes(y = cluster.y, x = cluster.y_mean)) + 
+  stat_halfeyeh() # Very little variation in low-precip slope
+m1_pipo %>% 
+  spread_draws(b_b2_Intercept, r_cluster.y__b2[cluster.y,]) %>%
+  mutate(cluster.y_mean = b_b2_Intercept + r_cluster.y__b2) %>%
+  ggplot(aes(y = cluster.y, x = cluster.y_mean)) + 
+  stat_halfeyeh() # somewhat less sensitivity in Plumas. Overall more sensitive than the other species at higher ppt 
+
+#save(m1_psme, m0_psme, m1_abco, m0_abco, m1_pipo, m0_pipo, file="./working-data/current_regression_models.RData")
+
+
+
+# NEXT: extract plot-level ranefs and plot against plot-level environmental variables. 
+
+# To get plot-level random effects, grab cluster level random effects, then add the plot level to them? Or just look at plot variation within cluster?
+
+extract_plot_ranefs <- function(m) {
+  z <- ranef(m)[["cluster.y:plot.id"]]
+  coef_names <- dimnames(z)[[3]]
+  df <- data.frame(plot.id = sapply(strsplit(dimnames(z)[[1]], "_"), last), cluster = sapply(strsplit(dimnames(z)[[1]], "_"), first))
+  for (i in coef_names) df <- cbind(df, z[,,i][,1])
+  names(df)[3:ncol(df)] <- coef_names
+  return(df)
+}
+
+# PSME
+psme_ranefs <- extract_plot_ranefs(m1_psme)
+psme_ranefs <- left_join(psme_ranefs, plots, by="plot.id")
+ggplot(psme_ranefs, aes(x=ppt.norm, y=alpha_Intercept, colour=cluster.y)) + geom_point() + theme_bw() + geom_smooth(method="lm") + geom_smooth(method="lm")
+ggplot(psme_ranefs, aes(x=ppt.norm, y=b1_Intercept, colour=cluster.y)) + geom_point() + theme_bw() + geom_smooth(method="lm")
+ggplot(psme_ranefs, aes(x=ppt.norm, y=b2_Intercept, colour=cluster.y)) + geom_point() + theme_bw() + geom_smooth(method="lm")
+
+# PIPO
+pipo_ranefs <- extract_plot_ranefs(m1_pipo)
+pipo_ranefs <- left_join(pipo_ranefs, plots, by="plot.id")
+ggplot(pipo_ranefs, aes(x=ppt.norm, y=alpha_Intercept, colour=cluster.y)) + geom_point() + theme_bw() + geom_smooth(method="lm")
+ggplot(pipo_ranefs, aes(x=ppt.norm, y=b1_Intercept, colour=cluster.y)) + geom_point() + theme_bw() + geom_smooth(method="lm")
+ggplot(pipo_ranefs, aes(x=ppt.norm, y=b2_Intercept, colour=cluster.y)) + geom_point() + theme_bw() + geom_smooth(method="lm")
+
+# ABCO
+abco_ranefs <- extract_plot_ranefs(m1_abco)
+abco_ranefs <- left_join(abc0_ranefs, plots, by="plot.id")
+ggplot(abco_ranefs, aes(x=ppt.norm, y=alpha_Intercept, colour=cluster.y)) + geom_point() + theme_bw() + geom_smooth(method="lm")
+ggplot(abco_ranefs, aes(x=ppt.norm, y=b1_Intercept, colour=cluster.y)) + geom_point() + theme_bw() + geom_smooth(method="lm")
+ggplot(abco_ranefs, aes(x=ppt.norm, y=b2_Intercept, colour=cluster.y)) + geom_point() + theme_bw() + geom_smooth(method="lm")
+
+
 
 # check individual tree response shapes
 ggplot(d[d$cluster.y == "Sierra",], aes(ppt.std, rwi))  + theme_bw() + geom_point() + geom_smooth(method=loess, se=FALSE, fullrange=FALSE) + facet_wrap(~tree.id) + theme(legend.position="none")
@@ -581,7 +712,14 @@ ggplot(d[d$cluster.y == "Tahoe" & d$cluster.x == "NL",], aes(ppt.std, rwi))  + t
 
 # Is there still autocorrelation in the residuals? 
 
+# Do the plot-level random effects correlate with environmental variables? 
+
+
 # Are there species differences in coefficients? Species differences by cluster? 
+# Overall, PIPO is most sensitive at higher ppt. Its response is highly consistent across sites (though less sensitive in Plumas). Its changepoint is to the right (higher) than the other species. It ramps down growth sooner under dry conditions, as expected (?). 
+# ABCO is the least sensitive to ppt across the range of ppt values. It is (maybe) reasonably modeled as a linear response.
+# PSME is intermediate between the other two species -- a clear changepoint and steep slope under dry conditions. But it doesn't hit this changepoint as soon as PIPO, and is less sensitive to ppt above that changepoint. Unlike the other 2 species, its changepoint is variable by cluster. 
+
 
 # Strength of autocorrelation by tree -- any systematic differences across precip gradients? Could look at both raw autocor in raw ring width, and at rwi, and at residuals of model? 
 
