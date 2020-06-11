@@ -2,6 +2,12 @@
 # 1) combines Derek's processed data into a long-form data frame for analysis;
 # 2) filters the data based on species, year, and number of data points per tree; 
 
+# 3) explores visually and by model testing how much variation there is among trees within plots, plots within clusters, and among clusters. 
+
+# 4) explores visually and through model comparison how much nonlinearity there is in the data. 
+
+#5 ) Fits changepoint regressions for each of the 3 main species and evaluates how these slopes and changepoints vary across the data set. 
+
 library(car)
 library(dplyr)
 library(reshape2)
