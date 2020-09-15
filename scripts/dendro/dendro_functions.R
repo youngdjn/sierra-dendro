@@ -432,7 +432,7 @@ clean.chron <- function(chron,trunc.unjustified.by.image = TRUE,clean_using_alig
   mod.justification <- cd.records %>%
     dplyr::group_by(Core.number) %>%
     dplyr::summarize(most.recent.unjustified.mod = max(`If.modification.did.not.make.sense.in.image...`,na.rm=TRUE)) %>%
-    filter(most.recent.unjustified.mod > 0)
+    dplyr::filter(most.recent.unjustified.mod > 0)
   
 
   #get most recent record for each core

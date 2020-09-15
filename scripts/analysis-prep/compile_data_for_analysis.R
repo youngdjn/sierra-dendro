@@ -7,8 +7,7 @@ library(reshape)
 library(DT)
 # if raster package is loaded, detach to avoid conflicts with dplyr: detach("package:raster",unload=TRUE)
 
-setwd("~/UC Davis/Research Projects/Sierra dendro/sierra-dendro") # Derek on Derek's computer
-#setwd("~/Research projects/Sierra dendro/sierra-dendro") # Derek on Latim-GIS-S
+setwd("~/repos/sierra-dendro") # Derek on Derek's computer
 
 # Load crossdating functions
 source("scripts/dendro/dendro_functions.R")
@@ -81,6 +80,7 @@ names(radii2) = radii$tree.id
 radii.old = radii
 radii = radii2
 
+rownames(chron_raw) = chron_raw$year
 
 #### Compute basal area / BAI ####
 
@@ -250,6 +250,7 @@ plot.data = left_join(plot.normal.climate,plot.ntrees,by="plot.id")
 
 
 ### Determine which latitudinal cluster
+plot.data = as.data.frame(plot.data)
 plot.data$cluster <- NA
 plot.data[which(plot.data$y.plot > 150000),"cluster"] <- "Plumas"
 plot.data[which((plot.data$y.plot < 150000) & (plot.data$y.plot > 0)),"cluster"] <- "Tahoe"
@@ -322,9 +323,9 @@ plot_summary = cores_summary %>%
 ## turn these into HTML tables
 
 dt = datatable(plot_summary,options=list(pageLength=1000))
-f<-"data\\dendro\\sample_size_summaries\\plot_sample_size.html"
+f<-"data/dendro/sample_size_summaries/plot_sample_size.html"
 saveWidget(dt,file=file.path(normalizePath(dirname(f)),basename(f)),selfcontained=TRUE,title="Number of cores by plot, species, and number of good rings")
 
 dt = datatable(cores_summary,options=list(pageLength=1000))
-f<-"data\\dendro\\sample_size_summaries\\core_ring_counts.html"
+f<-"data/dendro/sample_size_summaries/core_ring_counts.html"
 saveWidget(dt,file=file.path(normalizePath(dirname(f)),basename(f)),selfcontained=TRUE,title="Number of rings in each core and reason for truncation")
