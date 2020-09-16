@@ -18,6 +18,8 @@ library(bayesplot)
 library(arm)
 library(purrr)
 library(tidybayes)
+library(brmstools)
+
 
 # Set stan options 
 options(mc.cores = parallel::detectCores() - 2)
@@ -44,12 +46,51 @@ d_abco <- dplyr::filter(d, species=="ABCO")
 
 # Run linear regression model for precipitation sensitivity only, one species at a time
 
-lin_formula <- as.formula("rwi ~ rwi1 + rwi2 + rwi3 + ppt.std + ppt1.std + tmean.std + tmean1.std + rad.tot.std + voronoi.area.std + (1 + ppt.std|cluster.y/plot.id)")
+brms_data <- d_psme
+
+# Optionally subset the data for testing
+sub <- 0.3
+brms_data <- brms_data[sample(1:round(nrow(brms_data)*sub)),]
+
+brms_formula <- as.formula("raw_width ~ rwi1 + rwi2 + ppt.std * ppt.norm.std + ppt1.std + tmean.std + rad.tot.std + voronoi.area.std + voronoi.area.std:ppt.std + (1 + rwi1 + rwi2 + ppt.std + ppt.std:voronoi.area.std+ ppt1.std + tmean.std|cluster.y/plot.id)")
 
 set_prior("normal(0, 1)", class="b")
-set_prior("lkj(2)", class = "cor")
-set_prior("cauchy(0,2)", class = "sd")
+#set_prior("lkj(2)", class = "cor")
+#set_prior("cauchy(0,2)", class = "sd")
 
-brm(lin_formula, d_psme)
+m1_psme <- brm(brms_formula, data=brms_data, iter=2000)
+forest(m1_psme, grouping = "cluster.y", par="ppt.std:voronoi.area.std")
+
+summary(m1_psme)
+conditional_effects(m1_psme)
+loo(m1_psme) # with ppt and lagged rwi as random slopes, looic= -1966.4
+
+# rad.tot.std:ppt.std has little effect and little variation among clusters
+#
+
+get_variables(m1_psme)
+
+
+m1_psme %>% 
+  spread_draws(r_cluster.y[,"ppt.std"]) %>%
+  mutate(cluster.y_mean = b_ppt.std + r_cluster.y[,"ppt.std"]) %>%
+  ggplot(aes(y = cluster.y, x = cluster.y_mean)) + 
+  stat_halfeyeh() # Change point Rank: Plumas, Sierra, Tahoe, Yose
+
+
+# Try spline fit 
+brms_formula <- as.formula("rwi ~ rwi1 + rwi2 + s(ppt.std) + ppt.norm.std + ppt1.std + tmean.std + rad.tot.std + voronoi.area.std + (1|cluster.y/plot.id)")
+set_prior("normal(0, 1)", class="b")
+m2_psme <- brm(brms_formula, data=brms_data, iter=2000)
+conditional_effects(m2_psme)  
+loo(m1_psme, m2_psme) # nonhierarchical spline fit is quite nonlinear, but nonetheless, the resulting model minus random slopes is worse.
+
+# Next steps: 
+# Test for among-cluster and among-plot variation in other variables
+# Test for interactions between ppt.std and various environmental variables (rad.tot, voronoi, ppt.norm, tmean.norm, tmean, rwi1)
+
+# To compare species changes in sensitivity, maybe plot sensitivity in each cluster for each species? Or predict sensitivity under wet vs dry conditions for each species, and compare? 
+
+# Try predicting how trees from Plumas would respond to the Sierra environment, and vice versa. Check how different the prediction is using nonlinear vs linear fits. 
 
 
